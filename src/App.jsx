@@ -55,7 +55,7 @@ export default function App() {
     "I’ll be sad forever… 🥹",
   ];
 
-  /* STEP 1: GENERATE LINK */
+  /* STEP 1: Generate Magic Link */
   function handleGenerateLink() {
     if (!name) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name)}`;
@@ -63,11 +63,10 @@ export default function App() {
     setSubmitted(true);
   }
 
-  /* YES BUTTON */
+  /* STEP 2: YES BUTTON */
   async function handleYes() {
     setAnswered(true);
 
-    // insert response into Supabase
     const { data, error } = await supabase.from("valentine_response").insert([
       {
         name: recipientName,
@@ -79,17 +78,17 @@ export default function App() {
     if (error) console.error("Supabase insert error:", error);
     else console.log("Inserted:", data);
 
-    // heart fireworks
+    // Heart fireworks
     const interval = setInterval(createHeart, 120);
     setTimeout(() => clearInterval(interval), 4500);
   }
 
-  /* NO BUTTON (cute trap) */
+  /* STEP 2: NO BUTTON (cute trap) */
   function handleNo() {
     setNoCount((prev) => prev + 1);
   }
 
-  /* URL PARAM */
+  /* URL PARAMS */
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -98,8 +97,7 @@ export default function App() {
   }, [urlName]);
 
   const yesScale = 1 + noCount * 0.3;
-  const noMessage =
-    noMessages[Math.min(noCount, noMessages.length - 1)];
+  const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
 
   return (
     <div style={styles.container}>
@@ -132,9 +130,7 @@ export default function App() {
         <>
           <h1>{recipientName}, will you be my Valentine? 💘</h1>
 
-          {noCount > 0 && (
-            <p style={styles.noMessage}>{noMessage}</p>
-          )}
+          {noCount > 0 && <p style={styles.noMessage}>{noMessage}</p>}
 
           <div style={styles.buttons}>
             <button
