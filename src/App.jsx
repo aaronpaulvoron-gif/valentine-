@@ -48,9 +48,14 @@ export default function App() {
     "I’ll cry rn 😭😭😭",
     "I’ll wait forever if I have to 💘",
     "This NO button is fake anyway 😈",
+    "You can’t say NO 😺",
+    "Are you trying to break my heart? 💔",
+    "Think of the puppies 🐶",
+    "I even learned your favorite song 🎵",
+    "I’ll be sad forever… 🥹",
   ];
 
-  /* STEP 1 */
+  /* STEP 1: GENERATE LINK */
   function handleGenerateLink() {
     if (!name) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name)}`;
@@ -58,11 +63,12 @@ export default function App() {
     setSubmitted(true);
   }
 
-  /* YES */
-  function handleYes() {
+  /* YES BUTTON */
+  async function handleYes() {
     setAnswered(true);
 
-    supabase.from("valentine_response").insert([
+    // insert response into Supabase
+    const { data, error } = await supabase.from("valentine_response").insert([
       {
         name: recipientName,
         answered_yes: true,
@@ -70,16 +76,20 @@ export default function App() {
       },
     ]);
 
+    if (error) console.error("Supabase insert error:", error);
+    else console.log("Inserted:", data);
+
+    // heart fireworks
     const interval = setInterval(createHeart, 120);
     setTimeout(() => clearInterval(interval), 4500);
   }
 
-  /* NO (cute trap) */
+  /* NO BUTTON (cute trap) */
   function handleNo() {
     setNoCount((prev) => prev + 1);
   }
 
-  /* URL */
+  /* URL PARAM */
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -93,6 +103,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* STEP 1: Input Name */}
       {!urlName && !submitted && (
         <>
           <h1>Type your crush's name 💌</h1>
@@ -108,6 +119,7 @@ export default function App() {
         </>
       )}
 
+      {/* MAGIC LINK */}
       {magicLink && submitted && !urlName && (
         <>
           <h2>Send this link to {name} 💘</h2>
@@ -115,6 +127,7 @@ export default function App() {
         </>
       )}
 
+      {/* VALENTINE PAGE */}
       {urlName && !answered && (
         <>
           <h1>{recipientName}, will you be my Valentine? 💘</h1>
@@ -141,6 +154,7 @@ export default function App() {
         </>
       )}
 
+      {/* RESULT */}
       {answered && (
         <>
           <h1>{recipientName} SAID YES 💖💖💖</h1>
