@@ -15,7 +15,7 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-/* Add animation */
+/* Animation */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
@@ -38,14 +38,19 @@ export default function App() {
 
   const noMessages = [
     "Are you sure? 🥺",
-    "Really really sure? 😢",
-    "You hate me? 💔",
-    "Give me a chance 😭",
-    "I’ll be sad forever… 🥹",
-    "LAST CHANCE 😖💘",
+    "Wait wait… think again 😢",
+    "My heart just cracked 💔",
+    "What if I promise to be cute forever? 🐱",
+    "I’ll buy you snacks 😭🍫",
+    "Please don’t do this to me 🥹",
+    "I already told my cat about us… 🐈",
+    "My mom thinks we’re dating 😖",
+    "I’ll cry rn 😭😭😭",
+    "I’ll wait forever if I have to 💘",
+    "This NO button is fake anyway 😈",
   ];
 
-  /* STEP 1: CREATE MAGIC LINK */
+  /* STEP 1 */
   function handleGenerateLink() {
     if (!name) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name)}`;
@@ -57,7 +62,6 @@ export default function App() {
   function handleYes() {
     setAnswered(true);
 
-    // save to supabase
     supabase.from("valentine_response").insert([
       {
         name: recipientName,
@@ -66,17 +70,16 @@ export default function App() {
       },
     ]);
 
-    // heart fireworks
-    const interval = setInterval(createHeart, 150);
-    setTimeout(() => clearInterval(interval), 4000);
+    const interval = setInterval(createHeart, 120);
+    setTimeout(() => clearInterval(interval), 4500);
   }
 
-  /* NO (fake button) */
+  /* NO (cute trap) */
   function handleNo() {
     setNoCount((prev) => prev + 1);
   }
 
-  /* URL PARAM */
+  /* URL */
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -84,12 +87,12 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  const yesScale = 1 + noCount * 0.25;
-  const noText = noMessages[Math.min(noCount, noMessages.length - 1)];
+  const yesScale = 1 + noCount * 0.3;
+  const noMessage =
+    noMessages[Math.min(noCount, noMessages.length - 1)];
 
   return (
     <div style={styles.container}>
-      {/* STEP 1 */}
       {!urlName && !submitted && (
         <>
           <h1>Type your crush's name 💌</h1>
@@ -105,7 +108,6 @@ export default function App() {
         </>
       )}
 
-      {/* LINK */}
       {magicLink && submitted && !urlName && (
         <>
           <h2>Send this link to {name} 💘</h2>
@@ -113,10 +115,13 @@ export default function App() {
         </>
       )}
 
-      {/* VALENTINE PAGE */}
       {urlName && !answered && (
         <>
           <h1>{recipientName}, will you be my Valentine? 💘</h1>
+
+          {noCount > 0 && (
+            <p style={styles.noMessage}>{noMessage}</p>
+          )}
 
           <div style={styles.buttons}>
             <button
@@ -130,20 +135,19 @@ export default function App() {
             </button>
 
             <button onClick={handleNo} style={styles.no}>
-              {noText}
+              NO 😈
             </button>
           </div>
         </>
       )}
 
-      {/* RESULT */}
       {answered && (
         <>
           <h1>{recipientName} SAID YES 💖💖💖</h1>
           <img
             src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
             alt="cute cat"
-            style={{ width: "250px", marginTop: "20px" }}
+            style={{ width: "260px", marginTop: "20px" }}
           />
         </>
       )}
@@ -195,10 +199,10 @@ const styles = {
     backgroundColor: "#ff4d6d",
     color: "white",
     border: "none",
-    borderRadius: "12px",
+    borderRadius: "14px",
     cursor: "pointer",
-    padding: "16px 32px",
-    fontSize: "22px",
+    padding: "18px 36px",
+    fontSize: "24px",
     transition: "transform 0.3s ease",
   },
   no: {
@@ -209,5 +213,11 @@ const styles = {
     border: "none",
     borderRadius: "10px",
     cursor: "pointer",
+  },
+  noMessage: {
+    marginTop: "10px",
+    fontSize: "18px",
+    color: "#7a003c",
+    fontWeight: "bold",
   },
 };
