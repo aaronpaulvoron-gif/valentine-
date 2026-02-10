@@ -77,7 +77,7 @@ export default function App() {
     }
 
     const { data, error } = await supabase
-      .from("valentine_response")
+      .from("valentine_respone")
       .insert([
         {
           name: recipientName,
