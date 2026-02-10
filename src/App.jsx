@@ -36,6 +36,8 @@ export default function App() {
 
   const [noCount, setNoCount] = useState(0);
 
+  const [supabaseError, setSupabaseError] = useState(false);
+
   const noMessages = [
     "Are you sure? 🥺",
     "Wait wait… think again 😢",
@@ -67,16 +69,28 @@ export default function App() {
   async function handleYes() {
     setAnswered(true);
 
-    const { data, error } = await supabase.from("valentine_response").insert([
-      {
-        name: recipientName,
-        answered_yes: true,
-        no_count: noCount,
-      },
-    ]);
+    if (!supabase) {
+      console.error("Supabase client not initialized!");
+      setSupabaseError(true);
+      return;
+    }
 
-    if (error) console.error("Supabase insert error:", error);
-    else console.log("Inserted:", data);
+    const { data, error } = await supabase
+      .from("valentine_response")
+      .insert([
+        {
+          name: recipientName,
+          answered_yes: true,
+          no_count: noCount,
+        },
+      ]);
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      setSupabaseError(true);
+    } else {
+      console.log("Inserted:", data);
+    }
 
     // Heart fireworks
     const interval = setInterval(createHeart, 120);
@@ -98,6 +112,20 @@ export default function App() {
 
   const yesScale = 1 + noCount * 0.3;
   const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
+
+  /* If Supabase missing, show message */
+  if (!supabase) {
+    return (
+      <div style={styles.container}>
+        <h1>Oops! Supabase not configured 😿</h1>
+        <p>
+          Make sure your <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> environment variables are
+          set.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -153,12 +181,20 @@ export default function App() {
       {/* RESULT */}
       {answered && (
         <>
-          <h1>{recipientName} SAID YES 💖💖💖</h1>
-          <img
-            src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
-            alt="cute cat"
-            style={{ width: "260px", marginTop: "20px" }}
-          />
+          {supabaseError ? (
+            <p style={styles.noMessage}>
+              ❌ Could not save your response 😿
+            </p>
+          ) : (
+            <>
+              <h1>{recipientName} SAID YES 💖💖💖</h1>
+              <img
+                src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
+                alt="cute cat"
+                style={{ width: "260px", marginTop: "20px" }}
+              />
+            </>
+          )}
         </>
       )}
     </div>
