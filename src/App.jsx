@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "./supabase";
+import { supabase } from "./supabaseClient";
 
 /* 💖 HEART FIREWORKS */
 function createHeart() {
@@ -37,6 +37,7 @@ export default function App() {
   const [noCount, setNoCount] = useState(0);
 
   const [supabaseError, setSupabaseError] = useState(false);
+  const [supabaseMissing, setSupabaseMissing] = useState(false);
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -71,7 +72,7 @@ export default function App() {
 
     if (!supabase) {
       console.error("Supabase client not initialized!");
-      setSupabaseError(true);
+      setSupabaseMissing(true);
       return;
     }
 
@@ -113,23 +114,36 @@ export default function App() {
   const yesScale = 1 + noCount * 0.3;
   const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
 
-  /* If Supabase missing, show message */
-  if (!supabase) {
+  /* If Supabase missing, show message but app still works */
+  if (supabaseMissing) {
     return (
       <div style={styles.container}>
         <h1>Oops! Supabase not configured 😿</h1>
         <p>
-          Make sure your <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> environment variables are
-          set.
+          Make sure your <code>VITE_SUPABASE_URL</code> and{" "}
+          <code>VITE_SUPABASE_ANON_KEY</code> environment variables are set.
         </p>
+
+        {!urlName && !submitted && (
+          <>
+            <h1>Type your crush's name 💌</h1>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter name..."
+              style={styles.input}
+            />
+            <button onClick={handleGenerateLink} style={styles.button}>
+              Generate Magic Link
+            </button>
+          </>
+        )}
       </div>
     );
   }
 
   return (
     <div style={styles.container}>
-      {/* STEP 1: Input Name */}
       {!urlName && !submitted && (
         <>
           <h1>Type your crush's name 💌</h1>
@@ -145,7 +159,6 @@ export default function App() {
         </>
       )}
 
-      {/* MAGIC LINK */}
       {magicLink && submitted && !urlName && (
         <>
           <h2>Send this link to {name} 💘</h2>
@@ -153,7 +166,6 @@ export default function App() {
         </>
       )}
 
-      {/* VALENTINE PAGE */}
       {urlName && !answered && (
         <>
           <h1>{recipientName}, will you be my Valentine? 💘</h1>
@@ -178,7 +190,6 @@ export default function App() {
         </>
       )}
 
-      {/* RESULT */}
       {answered && (
         <>
           {supabaseError ? (
@@ -201,7 +212,6 @@ export default function App() {
   );
 }
 
-/* STYLES */
 const styles = {
   container: {
     height: "100vh",
