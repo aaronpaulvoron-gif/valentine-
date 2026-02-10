@@ -1,5 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+
+/* 💖 HEART FIREWORKS */
+function createHeart() {
+  const heart = document.createElement("div");
+  heart.innerText = "💖";
+  heart.style.position = "fixed";
+  heart.style.left = Math.random() * window.innerWidth + "px";
+  heart.style.top = window.innerHeight + "px";
+  heart.style.fontSize = Math.random() * 30 + 20 + "px";
+  heart.style.animation = "float 3s linear forwards";
+  document.body.appendChild(heart);
+
+  setTimeout(() => heart.remove(), 3000);
+}
+
+/* Add animation */
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes float {
+  to {
+    transform: translateY(-120vh);
+    opacity: 0;
+  }
+}`;
+document.head.appendChild(style);
 
 export default function App() {
   const [name, setName] = useState("");
@@ -8,9 +33,19 @@ export default function App() {
 
   const [recipientName, setRecipientName] = useState("");
   const [answered, setAnswered] = useState(false);
-  const [response, setResponse] = useState(null);
 
-  /* -------------------- STEP 1: GENERATE MAGIC LINK -------------------- */
+  const [noCount, setNoCount] = useState(0);
+
+  const noMessages = [
+    "Are you sure? 🥺",
+    "Really really sure? 😢",
+    "You hate me? 💔",
+    "Give me a chance 😭",
+    "I’ll be sad forever… 🥹",
+    "LAST CHANCE 😖💘",
+  ];
+
+  /* STEP 1: CREATE MAGIC LINK */
   function handleGenerateLink() {
     if (!name) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name)}`;
@@ -18,37 +53,43 @@ export default function App() {
     setSubmitted(true);
   }
 
-  /* -------------------- STEP 2: RECIPIENT SEES YES/NO -------------------- */
-  function handleYesNo(answer) {
+  /* YES */
+  function handleYes() {
     setAnswered(true);
-    setResponse(answer);
 
-    const noCount = answer === "no" ? 1 : 0;
+    // save to supabase
+    supabase.from("valentine_response").insert([
+      {
+        name: recipientName,
+        answered_yes: true,
+        no_count: noCount,
+      },
+    ]);
 
-    supabase
-      .from("valentine_response")
-      .insert([
-        {
-          name: recipientName,
-          answered_yes: answer === "yes",
-          no_count: noCount,
-        },
-      ])
-      .then(({ error }) => {
-        if (error) console.error(error);
-      });
+    // heart fireworks
+    const interval = setInterval(createHeart, 150);
+    setTimeout(() => clearInterval(interval), 4000);
   }
 
-  /* -------------------- CHECK URL PARAMS -------------------- */
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlName = urlParams.get("name");
+  /* NO (fake button) */
+  function handleNo() {
+    setNoCount((prev) => prev + 1);
+  }
 
-  // If opened with magic link, recipientName is prefilled
-  if (urlName && recipientName !== urlName) setRecipientName(urlName);
+  /* URL PARAM */
+  const params = new URLSearchParams(window.location.search);
+  const urlName = params.get("name");
+
+  useEffect(() => {
+    if (urlName) setRecipientName(urlName);
+  }, [urlName]);
+
+  const yesScale = 1 + noCount * 0.25;
+  const noText = noMessages[Math.min(noCount, noMessages.length - 1)];
 
   return (
     <div style={styles.container}>
-      {/* STEP 1: Input name and generate link */}
+      {/* STEP 1 */}
       {!urlName && !submitted && (
         <>
           <h1>Type your crush's name 💌</h1>
@@ -64,7 +105,7 @@ export default function App() {
         </>
       )}
 
-      {/* Show the generated magic link */}
+      {/* LINK */}
       {magicLink && submitted && !urlName && (
         <>
           <h2>Send this link to {name} 💘</h2>
@@ -72,32 +113,45 @@ export default function App() {
         </>
       )}
 
-      {/* STEP 2: Recipient YES/NO page */}
+      {/* VALENTINE PAGE */}
       {urlName && !answered && (
         <>
           <h1>{recipientName}, will you be my Valentine? 💘</h1>
+
           <div style={styles.buttons}>
-            <button onClick={() => handleYesNo("yes")} style={styles.yes}>
+            <button
+              onClick={handleYes}
+              style={{
+                ...styles.yes,
+                transform: `scale(${yesScale})`,
+              }}
+            >
               YES 💕
             </button>
-            <button onClick={() => handleYesNo("no")} style={styles.no}>
-              NO 😈
+
+            <button onClick={handleNo} style={styles.no}>
+              {noText}
             </button>
           </div>
         </>
       )}
 
-      {/* After recipient answers */}
+      {/* RESULT */}
       {answered && (
-        <h2>
-          {recipientName} said {response.toUpperCase()} 💖
-        </h2>
+        <>
+          <h1>{recipientName} SAID YES 💖💖💖</h1>
+          <img
+            src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
+            alt="cute cat"
+            style={{ width: "250px", marginTop: "20px" }}
+          />
+        </>
       )}
     </div>
   );
 }
 
-/* -------------------- STYLES -------------------- */
+/* STYLES */
 const styles = {
   container: {
     height: "100vh",
@@ -109,6 +163,7 @@ const styles = {
     fontFamily: "Arial, sans-serif",
     textAlign: "center",
     padding: "20px",
+    overflow: "hidden",
   },
   input: {
     padding: "10px",
@@ -142,12 +197,13 @@ const styles = {
     border: "none",
     borderRadius: "12px",
     cursor: "pointer",
-    padding: "10px 20px",
-    fontSize: "18px",
+    padding: "16px 32px",
+    fontSize: "22px",
+    transition: "transform 0.3s ease",
   },
   no: {
-    fontSize: "18px",
-    padding: "10px 20px",
+    fontSize: "16px",
+    padding: "10px 18px",
     backgroundColor: "#adb5bd",
     color: "white",
     border: "none",
