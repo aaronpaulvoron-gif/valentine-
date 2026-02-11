@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
-/* 💖 HEART ANIMATION */
+/* 💖 Heart animation */
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -15,22 +15,12 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-/* ANIMATION KEYFRAMES */
+/* Animation CSS */
 const style = document.createElement("style");
 style.innerHTML = `
-@keyframes float {
-  to {
-    transform: translateY(-120vh);
-    opacity: 0;
-  }
-}
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  50% { transform: translateX(6px); }
-  75% { transform: translateX(-6px); }
-  100% { transform: translateX(0); }
-}`;
+@keyframes float { to { transform: translateY(-120vh); opacity: 0; } }
+@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-6px); } 100% { transform: translateX(0); } }
+`;
 document.head.appendChild(style);
 
 export default function App() {
@@ -48,6 +38,7 @@ export default function App() {
   const noRef = useRef(null);
   const linkRef = useRef(null);
 
+  /* LOVE & NO messages with gifs */
   const loveQuotes = [
     "You just made me the happiest person alive 💖",
     "Forever starts now 💍",
@@ -56,13 +47,16 @@ export default function App() {
     "My heart is officially yours 💓",
   ];
 
-  const cuteReconsider = [
-    "Are you sure? 🥺",
-    "Think again 💕",
-    "I’ll still wait 💘",
-    "Maybe reconsider? 😢",
-    "Please don’t go 😭",
-    "I promise it’ll be fun 💞",
+  const cuteNoMessages = [
+    { msg: "Are you sure? 🥺", gif: "https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif" },
+    { msg: "Think again 💕", gif: "https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" },
+    { msg: "I’ll still wait 💘", gif: "https://media.giphy.com/media/l4FGuhL4U2WyjdkaY/giphy.gif" },
+    { msg: "Maybe reconsider? 😢", gif: "https://media.giphy.com/media/3oEduQAsYcJKQH2XsI/giphy.gif" },
+    { msg: "Please don’t go 😭", gif: "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif" },
+    { msg: "I promise it’ll be fun 💞", gif: "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" },
+    { msg: "I’ll bring snacks 🍫", gif: "https://media.giphy.com/media/xUPGcguWZHRC2HyBRS/giphy.gif" },
+    { msg: "Look at this cute cat 😺", gif: "https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" },
+    { msg: "I’ll be super cute 🐱", gif: "https://media.giphy.com/media/13borq7Zo2kulO/giphy.gif" },
   ];
 
   const sadQuotes = [
@@ -72,7 +66,7 @@ export default function App() {
     "You’re breaking my heart 😭",
   ];
 
-  /* GENERATE MAGIC LINK */
+  /* Generate magic link */
   function handleGenerateLink() {
     if (!name.trim()) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
@@ -80,83 +74,59 @@ export default function App() {
     setSubmitted(true);
   }
 
-  /* YES BUTTON */
+  /* YES button */
   async function handleYes() {
-    try {
-      const randomLove = loveQuotes[Math.floor(Math.random() * loveQuotes.length)];
-      setQuote(randomLove);
-      setAnswered(true);
+    setAnswered(true);
+    const randomLove = loveQuotes[Math.floor(Math.random() * loveQuotes.length)];
+    setQuote(randomLove);
 
-      const { error } = await supabase
-        .from("valentine_repone") // correct table name
-        .insert([
-          {
-            name: recipientName,
-            answered_yes: true,
-            no_count: noCount,
-            no_message: null, // optional
-            // created_at will auto-fill with timestamptz DEFAULT now()
-          },
-        ]);
-
-      if (error) throw error;
-
-      const interval = setInterval(createHeart, 120);
-      setTimeout(() => clearInterval(interval), 4000);
-      confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Supabase insert failed. Check table name, columns, and RLS policy.");
+    if (!supabase) {
+      setErrorMsg("Supabase client not initialized!");
+      return;
     }
+
+    try {
+      const { error } = await supabase.from("valentine_response2").insert([
+        { name: recipientName, answered_yes: true, no_count: noCount, no_message: null },
+      ]);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Supabase insert error:", err);
+      setErrorMsg("Supabase insert failed. Check table & RLS.");
+    }
+
+    const interval = setInterval(createHeart, 120);
+    setTimeout(() => clearInterval(interval), 4000);
+    confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
   }
 
-  /* NO BUTTON */
+  /* NO button */
   async function handleNo() {
     const newCount = noCount + 1;
     setNoCount(newCount);
 
-    let msg = "";
-    if (newCount < 10) {
-      msg = cuteReconsider[Math.floor(Math.random() * cuteReconsider.length)];
+    let msgObj = null;
+    if (newCount <= 9) {
+      msgObj = cuteNoMessages[newCount - 1];
     } else {
-      msg = sadQuotes[Math.floor(Math.random() * sadQuotes.length)];
+      const sad = sadQuotes[Math.floor(Math.random() * sadQuotes.length)];
+      msgObj = { msg: sad, gif: "https://c.tenor.com/5qOkgZVjP1UAAAAi/crying-cat.gif" };
       setFinalNo(true);
     }
-    setQuote(msg);
+
+    setQuote(msgObj.msg);
 
     try {
-      const { error } = await supabase
-        .from("valentine_repone")
-        .insert([
-          {
-            name: recipientName,
-            answered_yes: false,
-            no_count: newCount,
-            no_message: msg,
-          },
-        ]);
+      const { error } = await supabase.from("valentine_response2").insert([
+        { name: recipientName, answered_yes: false, no_count: newCount, no_message: msgObj.msg },
+      ]);
       if (error) throw error;
     } catch (err) {
       console.error(err);
-      setErrorMsg("Supabase insert failed. Check table name, columns, and RLS policy.");
-    }
-
-    // Animate YES button to grow
-    if (yesRef.current) {
-      const base = 170;
-      const grow = Math.min(newCount * 7, 50);
-      yesRef.current.style.width = base + grow + "px";
-      yesRef.current.style.boxShadow = `0 0 ${10 + grow}px rgba(255,77,109,0.7)`;
-    }
-
-    // Animate NO button shake
-    if (noRef.current) {
-      noRef.current.style.animation = "shake 0.4s";
-      setTimeout(() => { if (noRef.current) noRef.current.style.animation = "none"; }, 400);
+      setErrorMsg("Supabase insert failed.");
     }
   }
 
-  /* GET NAME FROM URL */
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -164,7 +134,6 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  /* COPY LINK */
   function copyLink() {
     navigator.clipboard.writeText(magicLink);
     if (linkRef.current) {
@@ -175,6 +144,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* Step 1: Enter name */}
       {!urlName && !submitted && (
         <>
           <h1 style={styles.title}>Create a Valentine Proposal 💌</h1>
@@ -183,6 +153,7 @@ export default function App() {
         </>
       )}
 
+      {/* Step 2: Show magic link */}
       {magicLink && submitted && !urlName && (
         <>
           <h2 style={styles.title}>Send this to your crush 💘</h2>
@@ -193,11 +164,14 @@ export default function App() {
         </>
       )}
 
+      {/* Step 3: YES / NO buttons */}
       {urlName && !answered && !finalNo && (
         <>
-          <h1 style={styles.big}>{recipientName}, will you be my Valentine?</h1>
+          <h1 style={styles.big}>{recipientName}, will you be my Valentine? 💘</h1>
           {quote && <p style={styles.quote}>{quote}</p>}
-
+          {noCount > 0 && noCount <= 9 && (
+            <img src={cuteNoMessages[noCount - 1].gif} alt="cute cat" style={{ width: "260px", marginTop: "15px", borderRadius: "12px" }} />
+          )}
           <div style={styles.buttons}>
             <button ref={yesRef} onClick={handleYes} style={styles.yes}>YES 💕</button>
             <button ref={noRef} onClick={handleNo} style={styles.no}>NO 💔</button>
@@ -206,6 +180,7 @@ export default function App() {
         </>
       )}
 
+      {/* Step 4: Final NO */}
       {finalNo && (
         <div style={{ textAlign: "center" }}>
           <h1 style={styles.big}>{recipientName} rejected you after 10 tries 😭💔</h1>
@@ -214,7 +189,8 @@ export default function App() {
         </div>
       )}
 
-      {answered && (
+      {/* Step 5: YES */}
+      {answered && !finalNo && (
         <>
           <h1 style={styles.big}>{recipientName} SAID YES 💖💖💖</h1>
           <p style={styles.quote}>{quote}</p>
@@ -237,6 +213,6 @@ const styles = {
   buttons: { display: "flex", gap: "100px", marginTop: "40px" },
   yes: { width: "170px", height: "70px", fontSize: "22px", borderRadius: "16px", border: "none", backgroundColor: "#ff4d6d", color: "white", cursor: "pointer", transition: "all 0.3s ease" },
   no: { width: "130px", height: "55px", fontSize: "18px", borderRadius: "12px", border: "none", backgroundColor: "#6c757d", color: "white", cursor: "pointer" },
-  quote: { fontSize: "20px", color: "white", fontWeight: "bold" },
+  quote: { fontSize: "20px", color: "white", fontWeight: "bold", marginTop: "15px" },
   counter: { marginTop: "15px", color: "white" },
 };
