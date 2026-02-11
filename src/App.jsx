@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
+// Floating hearts effect
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -14,6 +15,7 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
+// Animations
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
@@ -27,18 +29,15 @@ style.innerHTML = `
   100% { transform: translateX(0); }
 }
 @keyframes jump {
-  0% { transform: translate(0, 0); }
+  0% { transform: transform(0,0); }
   50% { transform: translate(var(--jump-x), var(--jump-y)); }
-  100% { transform: translate(0, 0); }
-}
-@keyframes copy-bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  100% { transform: transform(0,0); }
 }
 `;
 document.head.appendChild(style);
 
 export default function App() {
+  // States
   const [name, setName] = useState("");
   const [magicLink, setMagicLink] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -68,6 +67,7 @@ export default function App() {
     "I’ll wait forever if I have to 💘",
   ];
 
+  // First person generates the magic link
   function handleGenerateLink() {
     if (!name.trim()) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(
@@ -77,6 +77,7 @@ export default function App() {
     setSubmitted(true);
   }
 
+  // YES clicked by second person
   async function handleYes() {
     setAnswered(true);
 
@@ -95,25 +96,29 @@ export default function App() {
       setSupabaseError(true);
     }
 
+    // Hearts animation
     const interval = setInterval(createHeart, 120);
     setTimeout(() => clearInterval(interval), 4500);
 
+    // Confetti
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   }
 
+  // NO clicked by second person
   function handleNo() {
     if (noCount < 10) {
       const newCount = noCount + 1;
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      // Random position anywhere on the screen
       const btn = yesBtnRef.current;
       if (btn) {
         const btnWidth = btn.offsetWidth;
         const btnHeight = btn.offsetHeight;
         const maxX = window.innerWidth - btnWidth;
         const maxY = window.innerHeight - btnHeight;
+
+        // Generate a random position far from NO button (big jump)
         const randomX = Math.random() * maxX;
         const randomY = Math.random() * maxY;
 
@@ -132,6 +137,7 @@ export default function App() {
     navigator.clipboard.writeText(magicLink);
   }
 
+  // Get recipient name from URL
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -142,6 +148,7 @@ export default function App() {
   const yesScale = 1 + noCount * 0.3;
   const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
 
+  // Listen to Supabase for YES responses (first person notification)
   useEffect(() => {
     if (!submitted) return;
     const channel = supabase
@@ -174,6 +181,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* First person view */}
       {!urlName && !submitted && (
         <>
           <h1 style={styles.headline}>Type your crush's name 💌</h1>
@@ -187,9 +195,14 @@ export default function App() {
           <button onClick={handleGenerateLink} style={styles.button}>
             Generate Magic Link
           </button>
+
+          {notification && (
+            <div style={styles.notificationBar}>{notification}</div>
+          )}
         </>
       )}
 
+      {/* First person copy link view */}
       {magicLink && submitted && !urlName && (
         <>
           <h2 style={styles.headline}>Send this link to {name} 💘</h2>
@@ -203,10 +216,10 @@ export default function App() {
               Copy
             </button>
           </div>
-          {notification && <p style={styles.notification}>{notification}</p>}
         </>
       )}
 
+      {/* Second person view */}
       {urlName && !answered && (
         <>
           <h1 style={styles.headline}>
@@ -241,6 +254,7 @@ export default function App() {
         </>
       )}
 
+      {/* Response view */}
       {answered && (
         <>
           {supabaseError ? (
@@ -381,6 +395,19 @@ const styles = {
     color: "#ff1a75",
     fontWeight: "bold",
     animation: "shake 0.6s",
+  },
+  notificationBar: {
+    position: "fixed",
+    top: "10px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: "#ff4d6d",
+    color: "white",
+    padding: "10px 20px",
+    borderRadius: "12px",
+    fontSize: "18px",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+    zIndex: 1000,
   },
   notification: {
     marginTop: "25px",
