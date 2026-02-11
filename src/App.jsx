@@ -51,8 +51,7 @@ export default function App() {
 
   const yesBtnRef = useRef(null);
 
-  // Positions for big YES jumps, far from NO button area
-  // The screen center is 0,0; these values move YES far in random directions
+  // Positions for YES jumps far from NO
   const positions = [
     { x: "-300px", y: "-200px" },
     { x: "300px", y: "-200px" },
@@ -75,6 +74,11 @@ export default function App() {
     "My mom thinks we’re dating 😖",
     "I’ll cry rn 😭😭😭",
     "I’ll wait forever if I have to 💘",
+    "Life is hard… 😞",
+    "I feel so lonely… 🥺",
+    "The sky looks gray today… 🌧️",
+    "I wrote a sad poem for you… ✍️",
+    "All my chocolate melted 💔🍫",
   ];
 
   function handleGenerateLink() {
@@ -102,8 +106,6 @@ export default function App() {
     if (error) {
       console.error("Supabase insert error:", error);
       setSupabaseError(true);
-    } else {
-      console.log("Inserted yes response:", data);
     }
 
     const interval = setInterval(createHeart, 120);
@@ -118,9 +120,9 @@ export default function App() {
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      const sadQuote = noMessages[newCount - 1] || "I'm sad... 😢";
+      const sadQuote = noMessages[Math.min(newCount - 1, noMessages.length - 1)];
 
-      // Insert the NO response with sad quote to Supabase
+      // Save NO response
       try {
         await supabase
           .from("valentine_respone")
@@ -129,7 +131,7 @@ export default function App() {
         console.error("Supabase insert error on NO:", e);
       }
 
-      // Random big jump position for YES button (not near NO)
+      // Move YES far away
       let nextPosIndex;
       do {
         nextPosIndex = Math.floor(Math.random() * positions.length);
@@ -158,7 +160,7 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  // Listen for real-time updates for notifications (both YES and NO) ONLY after first user submitted (i.e. name entered)
+  // Real-time notifications for first person
   useEffect(() => {
     if (!submitted) return;
 
@@ -182,12 +184,10 @@ export default function App() {
     return () => supabase.removeChannel(channel);
   }, [submitted]);
 
-  // Make Yes button scale moderately with noCount but capped max scale 1.5
-  const yesScale = Math.min(1 + noCount * 0.1, 1.5);
+  const yesScale = Math.min(1 + noCount * 0.1, 1.3);
 
   return (
     <div style={styles.container}>
-      {/* Notification bar for first person */}
       {!urlName && submitted && notification && (
         <div style={styles.notificationBar}>{notification}</div>
       )}
@@ -229,7 +229,9 @@ export default function App() {
           <h1 style={styles.headline}>
             {recipientName}, will you be my Valentine? 💘
           </h1>
-          {noCount > 0 && <p style={styles.noMessage}>{noMessages[Math.min(noCount - 1, noMessages.length - 1)]}</p>}
+          {noCount > 0 && (
+            <p style={styles.noMessage}>{noMessages[Math.min(noCount - 1, noMessages.length - 1)]}</p>
+          )}
 
           <div style={styles.buttons}>
             <button
@@ -251,9 +253,7 @@ export default function App() {
           </div>
 
           {maxNoReached && (
-            <p style={styles.sadMessage}>
-              🥺 Oh no… you pressed NO 10 times! My heart is broken 💔
-            </p>
+            <p style={styles.sadMessage}>🥺 You pressed NO 10 times! My heart is broken 💔</p>
           )}
         </>
       )}
@@ -354,7 +354,7 @@ const styles = {
   },
   buttons: {
     display: "flex",
-    gap: "40px",
+    gap: "50px",
     marginTop: "40px",
     justifyContent: "center",
     alignItems: "center",
@@ -411,11 +411,5 @@ const styles = {
     padding: "12px 20px",
     zIndex: 9999,
     userSelect: "none",
-  },
-  notification: {
-    marginTop: "25px",
-    fontSize: "20px",
-    color: "#ff1a75",
-    fontWeight: "bold",
   },
 };
