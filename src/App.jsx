@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import confetti from "canvas-confetti";
 
-/* 💖 HEART FIREWORKS */
+/* 💖 Floating Hearts */
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -14,7 +15,6 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-/* --Animation-- */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
@@ -22,40 +22,73 @@ style.innerHTML = `
     transform: translateY(-120vh);
     opacity: 0;
   }
-}
-`;
+}`;
 document.head.appendChild(style);
 
 export default function App() {
+  const params = new URLSearchParams(window.location.search);
+  const urlName = params.get("name");
+  const accepted = params.get("accepted");
+
   const [name, setName] = useState("");
   const [magicLink, setMagicLink] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const [recipientName, setRecipientName] = useState("");
   const [answered, setAnswered] = useState(false);
-
   const [noCount, setNoCount] = useState(0);
   const [yesPosition, setYesPosition] = useState({ top: 0, left: 0 });
-
-  const [returnLink, setReturnLink] = useState("");
-
-  const [supabaseError, setSupabaseError] = useState(false);
-  const [supabaseMissing, setSupabaseMissing] = useState(false);
+  const [sadEnding, setSadEnding] = useState(false);
+  const [notification, setNotification] = useState(false);
 
   const noMessages = [
     "Are you sure? 🥺",
-    "Wait wait… think again 😢",
-    "My heart just cracked 💔",
-    "What if I promise to be cute forever? 🐱",
-    "I’ll buy you snacks 😭🍫",
-    "Please don’t do this to me 🥹",
-    "I already told my cat about us… 🐈",
-    "My mom thinks we’re dating 😖",
-    "I’ll cry rn 😭😭😭",
-    "Last chance… choose wisely 💘",
+    "Think again please… 💔",
+    "You're breaking my heart 😭",
+    "What if I buy you food? 🍕",
+    "I'll send you memes forever 🥹",
+    "Don't do this to us 😭",
+    "We’d look cute together 😢",
+    "I already imagined our future 💘",
+    "Last chance… 😭",
+    "This is your FINAL chance… 💔",
   ];
 
-  /* Generate Magic Link */
+  useEffect(() => {
+    if (urlName) setRecipientName(urlName);
+  }, [urlName]);
+
+  /* 🔔 REALTIME LISTENER */
+  useEffect(() => {
+    if (!submitted) return;
+
+    const channel = supabase
+      .channel("realtime-valentine")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "valentine_respone",
+        },
+        (payload) => {
+          if (payload.new.answered_yes === true) {
+            setNotification(true);
+            confetti({
+              particleCount: 200,
+              spread: 120,
+              origin: { y: 0.6 },
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [submitted]);
+
   function handleGenerateLink() {
     if (!name) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name)}`;
@@ -63,94 +96,108 @@ export default function App() {
     setSubmitted(true);
   }
 
-  /* YES BUTTON */
   async function handleYes() {
     setAnswered(true);
 
-    if (!supabase) {
-      setSupabaseMissing(true);
+    await supabase.from("valentine_respone").insert([
+      {
+        name: recipientName,
+        answered_yes: true,
+        no_count: noCount,
+      },
+    ]);
+
+    confetti({
+      particleCount: 250,
+      spread: 150,
+      origin: { y: 0.6 },
+    });
+
+    const interval = setInterval(createHeart, 100);
+    setTimeout(() => clearInterval(interval), 4000);
+
+    setTimeout(() => {
+      window.location.href = `${window.location.origin}?accepted=true`;
+    }, 2000);
+  }
+
+  function handleNo() {
+    if (noCount >= 9) {
+      setSadEnding(true);
       return;
     }
 
-    const { error } = await supabase
-      .from("valentine_respone")
-      .insert([
-        {
-          name: recipientName,
-          answered_yes: true,
-          no_count: noCount,
-        },
-      ]);
-
-    if (error) {
-      setSupabaseError(true);
-    }
-
-    const interval = setInterval(createHeart, 120);
-    setTimeout(() => clearInterval(interval), 4500);
-
-    // Generate return link
-    const link = `${window.location.origin}?name=${encodeURIComponent(
-      recipientName
-    )}&accepted=true`;
-
-    setReturnLink(link);
-  }
-
-  /* NO BUTTON - Only 10 chances */
-  function handleNo() {
-    if (noCount >= 10) return;
-
     setNoCount((prev) => prev + 1);
 
-    // Move YES randomly
     setYesPosition({
-      top: Math.random() * 200 - 100,
-      left: Math.random() * 200 - 100,
+      top: Math.random() * 600 - 300,
+      left: Math.random() * 600 - 300,
     });
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const urlName = params.get("name");
-
-  useEffect(() => {
-    if (urlName) setRecipientName(urlName);
-  }, [urlName]);
-
-  const yesScale = 1 + noCount * 0.25;
+  const yesScale = 1 + noCount * 0.35;
   const noMessage = noMessages[Math.min(noCount, 9)];
+
+  /* SUCCESS PAGE */
+  if (accepted === "true") {
+    return (
+      <div style={styles.container}>
+        <h1 style={styles.scriptBig}>💖 THEY SAID YES 💖</h1>
+        <p style={styles.elegant}>
+          Your love story officially begins now…
+        </p>
+      </div>
+    );
+  }
+
+  if (sadEnding) {
+    return (
+      <div style={styles.container}>
+        <h1 style={styles.scriptSad}>💔 Maybe Next Time...</h1>
+        <p style={styles.elegant}>
+          Some love stories need more time.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
+      {notification && (
+        <div style={styles.notification}>
+          💖 THEY SAID YES 💖
+        </div>
+      )}
+
       {!urlName && !submitted && (
         <>
-          <h1 style={styles.title}>Type your crush's name 💌</h1>
+          <h1 style={styles.title}>Create a Valentine Proposal 💌</h1>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter name..."
+            placeholder="Enter their name..."
             style={styles.input}
           />
           <button onClick={handleGenerateLink} style={styles.button}>
-            Generate Magic Link
+            Generate Magic Link ✨
           </button>
         </>
       )}
 
       {magicLink && submitted && !urlName && (
         <>
-          <h2 style={styles.subtitle}>Send this link 💘</h2>
+          <h2 style={styles.elegant}>Send this to your crush 💘</h2>
           <p style={styles.link}>{magicLink}</p>
         </>
       )}
 
       {urlName && !answered && (
         <>
-          <h1 style={styles.question}>
-            {recipientName}, will you be my Valentine? 💘
+          <h1 style={styles.script}>
+            {recipientName}, will you be my Valentine?
           </h1>
 
-          {noCount > 0 && noCount <= 10 && (
+          {noCount > 0 && (
             <p style={styles.noMessage}>{noMessage}</p>
           )}
 
@@ -168,40 +215,10 @@ export default function App() {
               YES 💕
             </button>
 
-            {noCount < 10 && (
-              <button onClick={handleNo} style={styles.no}>
-                NO 😈
-              </button>
-            )}
+            <button onClick={handleNo} style={styles.no}>
+              NO 💔
+            </button>
           </div>
-        </>
-      )}
-
-      {answered && (
-        <>
-          {supabaseError ? (
-            <p style={styles.noMessage}>
-              ❌ Could not save your response 😿
-            </p>
-          ) : (
-            <>
-              <h1 style={styles.success}>
-                {recipientName} SAID YES 💖
-              </h1>
-
-              <img
-                src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
-                alt="cute cat"
-                style={{ width: "260px", marginTop: "20px" }}
-              />
-
-              <h3 style={{ marginTop: "30px" }}>
-                Send this to the person who sent you this proposal 💌
-              </h3>
-
-              <p style={styles.link}>{returnLink}</p>
-            </>
-          )}
         </>
       )}
     </div>
@@ -216,38 +233,40 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    fontFamily: "'Poppins', sans-serif",
     textAlign: "center",
     padding: "20px",
-    overflow: "hidden",
     color: "white",
+    fontFamily: "'Poppins', sans-serif",
   },
   title: {
-    fontSize: "36px",
-    fontWeight: "700",
+    fontSize: "32px",
+    fontFamily: "'Playfair Display', serif",
   },
-  subtitle: {
-    fontSize: "24px",
-    fontWeight: "600",
-  },
-  question: {
-    fontSize: "42px",
+  script: {
+    fontSize: "50px",
     fontFamily: "'Great Vibes', cursive",
   },
-  success: {
-    fontSize: "40px",
+  scriptBig: {
+    fontSize: "65px",
     fontFamily: "'Great Vibes', cursive",
+  },
+  scriptSad: {
+    fontSize: "60px",
+    fontFamily: "'Great Vibes', cursive",
+  },
+  elegant: {
+    fontSize: "22px",
+    fontFamily: "'Playfair Display', serif",
   },
   input: {
     padding: "12px",
-    fontSize: "18px",
     borderRadius: "12px",
     border: "none",
-    marginBottom: "15px",
+    marginTop: "20px",
   },
   button: {
+    marginTop: "15px",
     padding: "12px 24px",
-    fontSize: "18px",
     borderRadius: "12px",
     border: "none",
     backgroundColor: "#ff4d6d",
@@ -255,39 +274,44 @@ const styles = {
     cursor: "pointer",
   },
   link: {
-    marginTop: "10px",
+    marginTop: "15px",
     background: "rgba(255,255,255,0.2)",
     padding: "10px",
     borderRadius: "10px",
-    wordBreak: "break-all",
   },
   buttons: {
     display: "flex",
-    gap: "20px",
-    marginTop: "20px",
+    gap: "40px",
+    marginTop: "30px",
   },
   yes: {
+    padding: "18px 40px",
+    fontSize: "24px",
+    borderRadius: "20px",
+    border: "none",
     backgroundColor: "#ff4d6d",
     color: "white",
-    border: "none",
-    borderRadius: "18px",
     cursor: "pointer",
-    padding: "18px 36px",
-    fontSize: "24px",
     transition: "all 0.3s ease",
   },
   no: {
-    fontSize: "16px",
-    padding: "10px 18px",
+    padding: "10px 20px",
+    borderRadius: "12px",
+    border: "none",
     backgroundColor: "#6c757d",
     color: "white",
-    border: "none",
-    borderRadius: "10px",
     cursor: "pointer",
   },
   noMessage: {
-    marginTop: "10px",
+    marginTop: "15px",
     fontSize: "18px",
-    fontWeight: "600",
+  },
+  notification: {
+    position: "fixed",
+    top: "20px",
+    backgroundColor: "#ff4d6d",
+    padding: "15px 30px",
+    borderRadius: "20px",
+    fontWeight: "bold",
   },
 };
