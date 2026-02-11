@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
+/* ----------------- Heart animation ----------------- */
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -14,28 +15,39 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
+/* ----------------- CSS Animations ----------------- */
 const style = document.createElement("style");
 style.innerHTML = `
-@keyframes float { to { transform: translateY(-120vh); opacity: 0; } }
-@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-6px); } 100% { transform: translateX(0); } }
+@keyframes float {
+  to { transform: translateY(-120vh); opacity: 0; }
+}
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
 `;
 document.head.appendChild(style);
 
+/* ----------------- Main App Component ----------------- */
 export default function App() {
-  const [name, setName] = useState("");
-  const [magicLink, setMagicLink] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [recipientName, setRecipientName] = useState("");
-  const [answered, setAnswered] = useState(false);
-  const [noCount, setNoCount] = useState(0);
-  const [finalNo, setFinalNo] = useState(false);
-  const [quote, setQuote] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [name, setName] = useState(""); // name input for link generation
+  const [magicLink, setMagicLink] = useState(""); // generated link
+  const [submitted, setSubmitted] = useState(false); // form submitted state
+  const [recipientName, setRecipientName] = useState(""); // name from URL
+  const [answered, setAnswered] = useState(false); // YES clicked
+  const [noCount, setNoCount] = useState(0); // NO counter
+  const [finalNo, setFinalNo] = useState(false); // NO limit reached
+  const [quote, setQuote] = useState(""); // quote to display
+  const [errorMsg, setErrorMsg] = useState(""); // Supabase error message
 
   const yesRef = useRef(null);
   const noRef = useRef(null);
   const linkRef = useRef(null);
 
+  /* ----------------- Quotes ----------------- */
   const loveQuotes = [
     "You just made me the happiest person alive 💖",
     "Forever starts now 💍",
@@ -60,6 +72,7 @@ export default function App() {
     "You’re breaking my heart 😭",
   ];
 
+  /* ----------------- Generate Magic Link ----------------- */
   function handleGenerateLink() {
     if (!name.trim()) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
@@ -67,32 +80,35 @@ export default function App() {
     setSubmitted(true);
   }
 
+  /* ----------------- Handle YES ----------------- */
   async function handleYes() {
     try {
       const randomLove = loveQuotes[Math.floor(Math.random() * loveQuotes.length)];
       setQuote(randomLove);
       setAnswered(true);
 
+      // Supabase insert
       const { error } = await supabase.from("valentine_repone").insert([
         { name: recipientName, answered_yes: true, no_count: noCount, no_message: null },
       ]);
-
       if (error) throw error;
 
+      // Hearts and confetti
       const interval = setInterval(createHeart, 120);
       setTimeout(() => clearInterval(interval), 4000);
       confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
     } catch (err) {
       console.error(err);
-      setErrorMsg("Supabase insert failed.");
+      setErrorMsg("Supabase insert failed. Please check your table & RLS policy.");
     }
   }
 
+  /* ----------------- Handle NO ----------------- */
   async function handleNo() {
     const newCount = noCount + 1;
     setNoCount(newCount);
 
-    // Random message logic
+    // Decide message
     let msg = "";
     if (newCount < 10) {
       msg = cuteReconsider[Math.floor(Math.random() * cuteReconsider.length)];
@@ -102,6 +118,7 @@ export default function App() {
     }
     setQuote(msg);
 
+    // Supabase insert
     try {
       const { error } = await supabase.from("valentine_repone").insert([
         { name: recipientName, answered_yes: false, no_count: newCount, no_message: msg },
@@ -109,9 +126,10 @@ export default function App() {
       if (error) throw error;
     } catch (err) {
       console.error(err);
-      setErrorMsg("Supabase insert failed.");
+      setErrorMsg("Supabase insert failed. Please check your table & RLS policy.");
     }
 
+    // Animate YES button
     if (yesRef.current) {
       const base = 170;
       const grow = Math.min(newCount * 7, 50);
@@ -119,12 +137,14 @@ export default function App() {
       yesRef.current.style.boxShadow = `0 0 ${10 + grow}px rgba(255,77,109,0.7)`;
     }
 
+    // Animate NO button
     if (noRef.current) {
       noRef.current.style.animation = "shake 0.4s";
       setTimeout(() => { if (noRef.current) noRef.current.style.animation = "none"; }, 400);
     }
   }
 
+  /* ----------------- Get name from URL ----------------- */
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -132,6 +152,7 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
+  /* ----------------- Copy Magic Link ----------------- */
   function copyLink() {
     navigator.clipboard.writeText(magicLink);
     if (linkRef.current) {
@@ -140,16 +161,24 @@ export default function App() {
     }
   }
 
+  /* ----------------- JSX ----------------- */
   return (
     <div style={styles.container}>
+      {/* Create Proposal */}
       {!urlName && !submitted && (
         <>
           <h1 style={styles.title}>Create a Valentine Proposal 💌</h1>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter their name..." style={styles.input} />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter their name..."
+            style={styles.input}
+          />
           <button onClick={handleGenerateLink} style={styles.mainBtn}>Generate Magic Link ✨</button>
         </>
       )}
 
+      {/* Show Magic Link */}
       {magicLink && submitted && !urlName && (
         <>
           <h2 style={styles.title}>Send this to your crush 💘</h2>
@@ -160,6 +189,7 @@ export default function App() {
         </>
       )}
 
+      {/* Question Page */}
       {urlName && !answered && !finalNo && (
         <>
           <h1 style={styles.big}>{recipientName}, will you be my Valentine?</h1>
@@ -173,6 +203,7 @@ export default function App() {
         </>
       )}
 
+      {/* Final NO */}
       {finalNo && (
         <div style={{ textAlign: "center" }}>
           <h1 style={styles.big}>{recipientName} rejected you after 10 tries 😭💔</h1>
@@ -181,6 +212,7 @@ export default function App() {
         </div>
       )}
 
+      {/* YES */}
       {answered && (
         <>
           <h1 style={styles.big}>{recipientName} SAID YES 💖💖💖</h1>
@@ -188,11 +220,13 @@ export default function App() {
         </>
       )}
 
+      {/* Error */}
       {errorMsg && <p style={{ color: "white" }}>{errorMsg}</p>}
     </div>
   );
 }
 
+/* ----------------- Styles ----------------- */
 const styles = {
   container: { height: "100vh", width: "100vw", background: "#f06292", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px" },
   title: { fontSize: "2.5rem", color: "white", marginBottom: "20px" },
