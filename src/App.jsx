@@ -16,19 +16,72 @@ export default function App() {
 
   const linkRef = useRef(null);
 
-  // 30 TOTAL - 20 English, 10 Tagalog
   const kiligQuotes = [
-    "You just made my heart skip a beat! 😍", "I’m the luckiest person alive! 💖", "My heart is yours forever. 💍", "You're my favorite person! 🌎", "I can't stop smiling! 😊", "You are my sunshine. ☀️", "Is this a dream? ✨", "You + Me = Forever. 💞", "My soulmate said yes! 🥂", "I'll make you happy every day. 🌹", "You have my whole heart. 💌", "Everything is better with you. 🍬", "Best thing ever! 🏆", "My heart is dancing! 💃", "Falling for you again. 🍂", "My greatest adventure. 🗺️", "Love you to the moon! 🌙", "My missing piece. 🧩", "World is brighter now. 💡", "Yours forever! 🏷️",
-    "Kinikilig ako sobra! 💓", "Ikaw lang talaga, promise. 🤞", "Sa'yo lang tumitibay ang puso ko. 💌", "Pangarap lang kita dati, ngayon akin ka na. 🌠", "Ang tamis ng buhay kapag kasama ka. 🧁", "Ikaw ang pinakamagandang nangyari sa akin. 🥇", "Sumasayaw ang puso ko sa saya! 💃", "Ikaw ang aking paboritong pahinga. 🏠", "Mahal na mahal kita, sobra. 🌙", "Bawal ang bawian, ha? 💍"
+    "You just made my heart skip a beat! 😍",
+    "I’m the luckiest person alive! 💖",
+    "My heart is yours forever. 💍",
+    "You're my favorite person! 🌎",
+    "I can't stop smiling! 😊",
+    "You are my sunshine. ☀️",
+    "Is this a dream? ✨",
+    "You + Me = Forever. 💞",
+    "My soulmate said yes! 🥂",
+    "I'll make you happy every day. 🌹",
+    "You have my whole heart. 💌",
+    "Everything is better with you. 🍬",
+    "Best thing ever! 🏆",
+    "My heart is dancing! 💃",
+    "Falling for you again. 🍂",
+    "My greatest adventure. 🗺️",
+    "Love you to the moon! 🌙",
+    "My missing piece. 🧩",
+    "World is brighter now. 💡",
+    "Yours forever! 🏷️",
+    "Kinikilig ako sobra! 💓",
+    "Ikaw lang talaga, promise. 🤞",
+    "Sa'yo lang tumitibay ang puso ko. 💌",
+    "Pangarap lang kita dati, ngayon akin ka na. 🌠",
+    "Ang tamis ng buhay kapag kasama ka. 🧁",
+    "Ikaw ang pinakamagandang nangyari sa akin. 🥇",
+    "Sumasayaw ang puso ko sa saya! 💃",
+    "Ikaw ang aking paboritong pahinga. 🏠",
+    "Mahal na mahal kita, sobra. 🌙",
+    "Bawal ang bawian, ha? 💍"
   ];
 
-  // 30 TOTAL - 20 English, 10 Tagalog
   const sadQuotes = [
-    "My heart is broken... 💔", "Crying in the corner. 😿", "Ice cream for one. 🍦", "Mission failed. 📉", "Why you do this? 😭", "Next life, maybe? 🌌", "Love is a lie! 🥀", "Hello darkness. 🌑", "Cats are sad too. 🐈‍⬛", "Is this the end? 🎬", "It's just rain. 🌧️", "Soul is tired. 💤", "Not the one. 🥀", "Pain: 100. 🤒", "Stepped on my heart. 👞", "Single life it is. 🚶", "Talk to my plants. 🪴", "Friendzone accepted. 🏳️", "Ouch... just ouch. 🩹", "Heart is a ghost town. 👻",
-    "Ang sakit naman nito. 😭", "Hindi ako umiiyak, napuwing lang. 🌧️", "Napagod na ang puso ko. 💤", "I guess hindi talaga ako para sa'yo. 🥀", "Dinurog mo ang puso ko. 👞", "Buti pa yung halaman, kinakausap ako. 🪴", "Ouch... ba't ganun? 🩹", "Nawawala na ako sa lungkot. 🌊", "Baka sa ibang universe, tayo na. 🪐", "Wala na, finish na talaga. 🛣️"
+    "My heart is broken... 💔",
+    "Crying in the corner. 😿",
+    "Ice cream for one. 🍦",
+    "Mission failed. 📉",
+    "Why you do this? 😭",
+    "Next life, maybe? 🌌",
+    "Love is a lie! 🥀",
+    "Hello darkness. 🌑",
+    "Cats are sad too. 🐈‍⬛",
+    "Is this the end? 🎬",
+    "It's just rain. 🌧️",
+    "Soul is tired. 💤",
+    "Not the one. 🥀",
+    "Pain: 100. 🤒",
+    "Stepped on my heart. 👞",
+    "Single life it is. 🚶",
+    "Talk to my plants. 🪴",
+    "Friendzone accepted. 🏳️",
+    "Ouch... just ouch. 🩹",
+    "Heart is a ghost town. 👻",
+    "Ang sakit naman nito. 😭",
+    "Hindi ako umiiyak, napuwing lang. 🌧️",
+    "Napagod na ang puso ko. 💤",
+    "I guess hindi talaga ako para sa'yo. 🥀",
+    "Dinurog mo ang puso ko. 👞",
+    "Buti pa yung halaman, kinakausap ako. 🪴",
+    "Ouch... ba't ganun? 🩹",
+    "Nawawala na ako sa lungkot. 🌊",
+    "Baka sa ibang universe, tayo na. 🪐",
+    "Wala na, finish na talaga. 🛣️"
   ];
 
-  // KEPT EXACTLY THE SAME AS YOUR REQUEST
   const cuteNoMessages = [
     { msg: "Are you sure? 🥺", gif: "https://i.giphy.com/OPU6wUKARA8AU.gif" },
     { msg: "Think again 💕", gif: "https://i.giphy.com/mlvseq9nOe4QXCLXdM.gif" },
@@ -64,22 +117,25 @@ export default function App() {
 
   function handleGenerateLink() {
     if (!name.trim()) return;
-    const generatedLink = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
+    const targetName = name.trim();
+    const generatedLink = `${window.location.origin}?name=${encodeURIComponent(targetName)}`;
     setMagicLink(generatedLink);
     setSubmitted(true);
 
-    // REAL-TIME LISTENER FOR YOU
     supabase
       .channel('responses')
       .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'valentine_response2', filter: `name=eq.${name.trim()}` },
+        { event: 'INSERT', schema: 'public', table: 'valentine_response2' },
         (payload) => {
-          if (payload.new.answered_yes) {
-            setStatus("OMG! SHE SAID YES! 🎉💖");
-            alert(`🚨 SUCCESS: ${payload.new.name} said YES! Check your heart!`);
-            confetti({ particleCount: 150, spread: 70 });
-          } else {
-            setStatus(`${payload.new.name} just clicked NO... 🥺 (Attempt ${payload.new.no_count})`);
+          const newData = payload.new;
+          if (newData.name.toLowerCase() === targetName.toLowerCase()) {
+            if (newData.answered_yes) {
+              setStatus(`OMG! ${newData.name} SAID YES! 🎉💖`);
+              alert(`🚨 NOTIFICATION: ${newData.name} just said YES!`);
+              confetti({ particleCount: 150, spread: 70 });
+            } else {
+              setStatus(`${newData.name} clicked NO... 🥺 (Attempt ${newData.no_count})`);
+            }
           }
         }
       ).subscribe();
@@ -120,19 +176,33 @@ export default function App() {
     }
   }, []);
 
+  // ✅ GIF fallback handler
+  const handleGifError = (e) => {
+    e.target.src = ""; // remove broken image
+    e.target.alt = "Content Not Available 😿";
+    e.target.style.height = "180px";
+    e.target.style.display = "flex";
+    e.target.style.alignItems = "center";
+    e.target.style.justifyContent = "center";
+    e.target.style.background = "#f0f0f0";
+    e.target.style.color = "#ff4d6d";
+    e.target.style.fontWeight = "bold";
+    e.target.style.fontSize = "14px";
+    e.target.style.borderRadius = "20px";
+    e.target.style.textAlign = "center";
+  };
+
   return (
     <div style={styles.container}>
-      {/* SENDER VIEW */}
       {!recipientName && !submitted && (
         <div style={styles.card}>
           <h1 style={styles.title}>Valentine Proposal 💌</h1>
-          <img src="https://i.giphy.com/C1asB6XJjAnS0.gif" style={styles.gif} />
+          <img src="https://i.giphy.com/C1asB6XJjAnS0.gif" onError={handleGifError} style={styles.gif} />
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter crush name..." style={styles.input} />
           <button onClick={handleGenerateLink} style={styles.mainBtn}>Create Magic Link ✨</button>
         </div>
       )}
 
-      {/* WAITING ROOM (FOR YOU) */}
       {submitted && !recipientName && (
         <div style={styles.card}>
           <h2 style={{color: '#ff4d6d'}}>Link Ready! 🚀</h2>
@@ -141,15 +211,14 @@ export default function App() {
             <input readOnly value={magicLink} style={styles.linkInput} />
             <button onClick={() => {navigator.clipboard.writeText(magicLink); alert("Link Copied! 🐾");}} style={styles.copyBtn}>Copy</button>
           </div>
-          <p style={{fontSize: '11px', marginTop: '10px', color: '#888'}}>Don't close this tab to get the live alert!</p>
+          <p style={{fontSize: '11px', marginTop: '10px', color: '#888'}}>Don't close this tab to see the live result!</p>
         </div>
       )}
 
-      {/* RECIPIENT VIEW */}
       {recipientName && !answered && !finalNo && (
         <div style={styles.card}>
           <h1 style={styles.big}>{recipientName}, will you be my Valentine? 💘</h1>
-          <img src={currentGif} style={styles.gif} />
+          <img src={currentGif} onError={handleGifError} style={styles.gif} />
           <p style={styles.quote}>{quote || "I have a special question..."}</p>
           <div style={styles.buttons}>
             <button onClick={handleYes} style={styles.yes}>YES 💕</button>
@@ -158,11 +227,10 @@ export default function App() {
         </div>
       )}
 
-      {/* RECIPIENT RESULT */}
       {(answered || finalNo) && (
         <div style={styles.card}>
           <h1 style={styles.big}>{answered ? `SEE YOU SOON! 🎉` : `Rejected... 😭`}</h1>
-          <img src={currentGif} style={styles.gif} />
+          <img src={currentGif} onError={handleGifError} style={styles.gif} />
           <p style={styles.quote}>{quote}</p>
         </div>
       )}
