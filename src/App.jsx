@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
-/* 💖 Floating Heart Animation Logic */
+/* 💖 Floating Heart Animation */
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -28,7 +28,6 @@ export default function App() {
   const [noCount, setNoCount] = useState(0);
   const [finalNo, setFinalNo] = useState(false);
   const [quote, setQuote] = useState("");
-  // STARTING GIF (Welcoming Cat)
   const [currentGif, setCurrentGif] = useState("https://media.tenor.com/IC_v7_379eAAAAAi/cat-hello.gif");
 
   const linkRef = useRef(null);
@@ -96,21 +95,25 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* 1. START SCREEN */}
+      {/* 1. START BOX (Welcome) */}
       {!recipientName && !submitted && (
         <div style={styles.card}>
           <h1 style={styles.title}>Valentine Proposal 💌</h1>
-          <img src="https://media.tenor.com/IC_v7_379eAAAAAi/cat-hello.gif" style={styles.gif} />
+          <div style={styles.gifContainer}>
+            <img src="https://media.tenor.com/IC_v7_379eAAAAAi/cat-hello.gif" style={styles.gif} />
+          </div>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Who is the lucky person?" style={styles.input} />
           <button onClick={handleGenerateLink} style={styles.mainBtn}>Create Magic Link ✨</button>
         </div>
       )}
 
-      {/* 2. COPY LINK SCREEN */}
+      {/* 2. LINK BOX (Copy) */}
       {submitted && !recipientName && (
         <div style={styles.card}>
           <h2 style={{color: '#ff4d6d'}}>It's Ready! 😻</h2>
-          <img src="https://media.tenor.com/vFKqnCdLPNOKcAAC/cat-kiss.gif" style={styles.gif} />
+          <div style={styles.gifContainer}>
+            <img src="https://media.tenor.com/vFKqnCdLPNOKcAAC/cat-kiss.gif" style={styles.gif} />
+          </div>
           <p style={{color: '#666', fontSize: '14px'}}>Send this link to your crush:</p>
           <div style={styles.linkBox}>
             <input ref={linkRef} value={magicLink} readOnly style={styles.linkInput} />
@@ -119,11 +122,13 @@ export default function App() {
         </div>
       )}
 
-      {/* 3. THE PROPOSAL SCREEN */}
+      {/* 3. PROPOSAL BOX */}
       {recipientName && !answered && !finalNo && (
         <div style={styles.card}>
           <h1 style={styles.big}>{recipientName}, will you be my Valentine? 💘</h1>
-          <img src={currentGif} style={styles.gif} />
+          <div style={styles.gifContainer}>
+            <img src={currentGif} style={styles.gif} />
+          </div>
           <p style={styles.quote}>{quote || "I have a special question for you..."}</p>
           <div style={styles.buttons}>
             <button onClick={handleYes} style={styles.yes}>YES 💕</button>
@@ -132,11 +137,13 @@ export default function App() {
         </div>
       )}
 
-      {/* 4. FINAL SCREEN (Yes or Rejected) */}
+      {/* 4. FINAL RESULTS */}
       {(answered || finalNo) && (
         <div style={styles.card}>
           <h1 style={styles.big}>{answered ? "SHE SAID YES! 🎉" : "REJECTED... 😭"}</h1>
-          <img src={currentGif} style={styles.gif} />
+          <div style={styles.gifContainer}>
+            <img src={currentGif} style={styles.gif} />
+          </div>
           <p style={styles.quote}>{quote}</p>
         </div>
       )}
@@ -146,17 +153,18 @@ export default function App() {
 
 const styles = {
   container: { height: "100vh", width: "100vw", background: "linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontFamily: "'Segoe UI', sans-serif" },
-  card: { background: "rgba(255, 255, 255, 0.95)", backdropFilter: "blur(10px)", padding: "40px", borderRadius: "30px", boxShadow: "0 15px 35px rgba(0,0,0,0.1)", textAlign: "center", maxWidth: "450px", width: "100%", zIndex: 10 },
-  title: { fontSize: "1.8rem", color: "#ff4d6d", marginBottom: "20px" },
-  big: { fontSize: "2.1rem", color: "#ff4d6d", marginBottom: "20px", lineHeight: '1.2' },
+  card: { background: "rgba(255, 255, 255, 0.95)", backdropFilter: "blur(10px)", padding: "35px", borderRadius: "30px", boxShadow: "0 15px 35px rgba(0,0,0,0.1)", textAlign: "center", maxWidth: "420px", width: "100%", zIndex: 10 },
+  gifContainer: { display: 'flex', justifyContent: 'center', marginBottom: '20px' },
+  gif: { width: "200px", height: "170px", objectFit: 'cover', borderRadius: "20px", boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+  title: { fontSize: "1.7rem", color: "#ff4d6d", marginBottom: "20px" },
+  big: { fontSize: "2rem", color: "#ff4d6d", marginBottom: "20px", lineHeight: '1.2' },
   input: { padding: "14px", width: "85%", borderRadius: "15px", border: "2px solid #ffb6c1", marginBottom: "20px", textAlign: 'center', outline: 'none' },
-  mainBtn: { padding: "12px 30px", fontSize: "18px", borderRadius: "15px", border: "none", backgroundColor: "#ff4d6d", color: "white", cursor: "pointer", fontWeight: "bold", boxShadow: '0 4px 15px rgba(255, 77, 109, 0.3)' },
-  linkBox: { background: "#fff5f7", padding: "10px", borderRadius: "15px", display: "flex", border: "2px dashed #ff4d6d", marginTop: "15px", alignItems: 'center' },
-  linkInput: { border: "none", background: "transparent", color: "#ff4d6d", flex: 1, padding: "5px", fontSize: '14px', outline: 'none' },
+  mainBtn: { padding: "12px 30px", fontSize: "17px", borderRadius: "15px", border: "none", backgroundColor: "#ff4d6d", color: "white", cursor: "pointer", fontWeight: "bold", boxShadow: '0 4px 15px rgba(255, 77, 109, 0.3)' },
+  linkBox: { background: "#fff5f7", padding: "10px", borderRadius: "15px", display: "flex", border: "2px dashed #ff4d6d", marginTop: "10px", alignItems: 'center' },
+  linkInput: { border: "none", background: "transparent", color: "#ff4d6d", flex: 1, padding: "5px", fontSize: '13px', outline: 'none' },
   copyBtn: { padding: "8px 15px", borderRadius: "10px", backgroundColor: "#ff4d6d", color: "white", border: "none", cursor: "pointer", fontWeight: 'bold' },
-  gif: { width: "230px", height: "190px", objectFit: 'cover', borderRadius: "20px", marginBottom: "20px", boxShadow: '0 5px 15px rgba(0,0,0,0.08)' },
   buttons: { display: "flex", gap: "20px", justifyContent: "center", alignItems: "center", marginTop: "20px" },
   yes: { padding: "15px 40px", fontSize: "22px", borderRadius: "15px", backgroundColor: "#4caf50", color: "white", border: "none", cursor: "pointer", fontWeight: "bold", boxShadow: '0 5px 0 #2e7d32' },
   no: { padding: "10px 20px", fontSize: "16px", borderRadius: "10px", backgroundColor: "#6c757d", color: "white", border: "none", cursor: "pointer" },
-  quote: { fontSize: "19px", color: "#ff4d6d", fontWeight: "bold", margin: "10px 0" }
+  quote: { fontSize: "18px", color: "#ff4d6d", fontWeight: "bold", margin: "10px 0" }
 };
