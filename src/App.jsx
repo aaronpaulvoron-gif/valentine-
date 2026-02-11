@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
-// Heart floating animation
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -15,12 +14,23 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-// CSS animations
 const style = document.createElement("style");
 style.innerHTML = `
-@keyframes float { to { transform: translateY(-120vh); opacity: 0; } }
-@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
-@keyframes jump { 0% { transform: translate(0, 0); } 50% { transform: translate(var(--jump-x), var(--jump-y)); } 100% { transform: translate(0, 0); } }
+@keyframes float {
+  to { transform: translateY(-120vh); opacity: 0; }
+}
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+  75% { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
+}
+@keyframes jump {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(var(--jump-x), var(--jump-y)); }
+  100% { transform: translate(0, 0); }
+}
 `;
 document.head.appendChild(style);
 
@@ -33,38 +43,43 @@ export default function App() {
   const [noCount, setNoCount] = useState(0);
   const [maxNoReached, setMaxNoReached] = useState(false);
   const [supabaseError, setSupabaseError] = useState(false);
+  const [supabaseMissing, setSupabaseMissing] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [lastYesPos, setLastYesPos] = useState(null);
 
-  const yesBtnRef = useRef(null);
   const [yesJumpKey, setYesJumpKey] = useState(0);
   const [yesJumpStyle, setYesJumpStyle] = useState({});
 
-  // YES button random positions
-  const positions = [
-    { x: "-300px", y: "-200px" },
-    { x: "300px", y: "-200px" },
-    { x: "-350px", y: "150px" },
-    { x: "350px", y: "150px" },
-    { x: "0px", y: "-300px" },
-    { x: "-400px", y: "0px" },
-    { x: "400px", y: "0px" },
-    { x: "0px", y: "300px" },
+  const yesBtnRef = useRef(null);
+
+  const yesPositions = [
+    { x: -300, y: -200 },
+    { x: 300, y: -200 },
+    { x: -350, y: 150 },
+    { x: 350, y: 150 },
+    { x: 0, y: -300 },
+    { x: -400, y: 0 },
+    { x: 400, y: 0 },
+    { x: 0, y: 300 },
   ];
 
-  // NO messages
   const noMessages = [
-    "Are you sure? 🥺", "Wait wait… think again 😢", "My heart just cracked 💔",
-    "What if I promise to be cute forever? 🐱", "I’ll buy you snacks 😭🍫",
-    "Please don’t do this to me 🥹", "I already told my cat about us… 🐈",
-    "My mom thinks we’re dating 😖", "I’ll cry rn 😭😭😭", "I’ll wait forever if I have to 💘",
-    "Life is hard… 😞", "I feel so lonely… 🥺", "The sky looks gray today… 🌧️",
-    "I wrote a sad poem for you… ✍️", "All my chocolate melted 💔🍫"
+    "Are you sure? 🥺",
+    "Wait wait… think again 😢",
+    "My heart just cracked 💔",
+    "What if I promise to be cute forever? 🐱",
+    "I’ll buy you snacks 😭🍫",
+    "Please don’t do this to me 🥹",
+    "I already told my cat about us… 🐈",
+    "My mom thinks we’re dating 😖",
+    "I’ll cry rn 😭😭😭",
+    "I’ll wait forever if I have to 💘",
   ];
 
   function handleGenerateLink() {
     if (!name.trim()) return;
-    const link = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
+    const link = `${window.location.origin}?name=${encodeURIComponent(
+      name.trim()
+    )}`;
     setMagicLink(link);
     setSubmitted(true);
   }
@@ -72,77 +87,98 @@ export default function App() {
   async function handleYes() {
     setAnswered(true);
 
-    if (!supabase) return;
+    if (!supabase) {
+      console.error("Supabase client not initialized!");
+      setSupabaseMissing(true);
+      return;
+    }
 
-    await supabase.from("valentine_respone").insert([
-      { name: recipientName, answered_yes: true, no_count: noCount, no_message: null }
-    ]);
+    const { data, error } = await supabase
+      .from("valentine_respone")
+      .insert([{ name: recipientName, answered_yes: true, no_count: noCount, no_message: null }]);
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      setSupabaseError(true);
+    }
 
     const interval = setInterval(createHeart, 120);
     setTimeout(() => clearInterval(interval), 4500);
+
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   }
 
   async function handleNo() {
-    const newCount = noCount + 1;
-    setNoCount(newCount);
+    if (noCount < 10) {
+      const newCount = noCount + 1;
+      setNoCount(newCount);
+      if (newCount === 10) setMaxNoReached(true);
 
-    const sadQuote = noMessages[Math.min(newCount - 1, noMessages.length - 1)];
+      const sadQuote = noMessages[newCount - 1] || "I'm sad... 😢";
 
-    if (!supabase) return;
-    await supabase.from("valentine_respone").insert([
-      { name: recipientName, answered_yes: false, no_count: newCount, no_message: sadQuote }
-    ]);
+      try {
+        await supabase
+          .from("valentine_respone")
+          .insert([{ name: recipientName, answered_yes: false, no_count: newCount, no_message: sadQuote }]);
+      } catch (e) {
+        console.error("Supabase insert error on NO:", e);
+      }
 
-    if (newCount >= 10) setMaxNoReached(true);
+      // Move YES button far away from NO button
+      let nextPosIndex;
+      do {
+        nextPosIndex = Math.floor(Math.random() * yesPositions.length);
+      } while (
+        yesJumpStyle["--jump-x"] === yesPositions[nextPosIndex].x + "px" &&
+        yesJumpStyle["--jump-y"] === yesPositions[nextPosIndex].y + "px"
+      );
 
-    // Move YES button randomly, not repeating last position
-    let nextPosIndex;
-    do {
-      nextPosIndex = Math.floor(Math.random() * positions.length);
-    } while (lastYesPos === nextPosIndex);
-    setLastYesPos(nextPosIndex);
-    setYesJumpStyle({
-      "--jump-x": positions[nextPosIndex].x,
-      "--jump-y": positions[nextPosIndex].y,
-      animation: "jump 0.6s ease",
-    });
-    setYesJumpKey(k => k + 1);
+      setYesJumpStyle({
+        "--jump-x": yesPositions[nextPosIndex].x + "px",
+        "--jump-y": yesPositions[nextPosIndex].y + "px",
+        animation: "jump 0.6s ease",
+      });
+      setYesJumpKey((k) => k + 1);
+    }
   }
 
-  function handleCopyLink() { navigator.clipboard.writeText(magicLink); }
+  function handleCopyLink() {
+    navigator.clipboard.writeText(magicLink);
+  }
 
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
-  useEffect(() => { if (urlName) setRecipientName(urlName); }, [urlName]);
+  useEffect(() => {
+    if (urlName) setRecipientName(urlName);
+  }, [urlName]);
 
-  // Real-time notifications
+  // Real-time notifications for the first person
   useEffect(() => {
     if (!submitted) return;
 
-    const channel = supabase.channel("valentine-channel").on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "valentine_respone" },
-      payload => {
-        const { name: responderName, answered_yes, no_count, no_message } = payload.new;
-        if (answered_yes) {
-          setNotification(`${responderName} said YES! 💖`);
-          confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
-        } else {
-          setNotification(`No ${no_count}: "${no_message}" 😢`);
+    const channel = supabase
+      .channel("valentine-channel")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "valentine_respone" },
+        (payload) => {
+          const { name: responderName, answered_yes, no_count, no_message } = payload.new;
+          if (answered_yes) {
+            setNotification(`${responderName} said YES! 💖`);
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+          } else {
+            setNotification(`No ${no_count} times: "${no_message}" 😢`);
+          }
         }
-      }
-    ).subscribe();
+      )
+      .subscribe();
 
     return () => supabase.removeChannel(channel);
   }, [submitted]);
 
-  const yesScale = Math.min(1 + noCount * 0.1, 1.3);
-
   return (
     <div style={styles.container}>
-      {/* Notification bar */}
       {!urlName && submitted && notification && (
         <div style={styles.notificationBar}>{notification}</div>
       )}
@@ -152,12 +188,14 @@ export default function App() {
           <h1 style={styles.headline}>Type your crush's name 💌</h1>
           <input
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Enter name..."
             style={styles.input}
             autoFocus
           />
-          <button onClick={handleGenerateLink} style={styles.button}>Generate Magic Link</button>
+          <button onClick={handleGenerateLink} style={styles.button}>
+            Generate Magic Link
+          </button>
         </>
       )}
 
@@ -166,51 +204,53 @@ export default function App() {
           <h2 style={styles.headline}>Send this link to {name} 💘</h2>
           <div style={styles.linkBox}>
             <p style={styles.link}>{magicLink}</p>
-            <button onClick={handleCopyLink} style={styles.copyBtn}>Copy</button>
+            <button onClick={handleCopyLink} style={styles.copyBtn}>
+              Copy
+            </button>
           </div>
         </>
       )}
 
       {urlName && !answered && (
         <>
-          <h1 style={styles.headline}>{recipientName}, will you be my Valentine? 💘</h1>
+          <h1 style={styles.headline}>
+            {recipientName}, will you be my Valentine? 💘
+          </h1>
+          {noCount > 0 && <p style={styles.noMessage}>{noMessages[Math.min(noCount - 1, noMessages.length - 1)]}</p>}
           <div style={styles.buttons}>
             <button
               ref={yesBtnRef}
               key={yesJumpKey}
               onClick={handleYes}
-              style={{ ...styles.yes, transform: `scale(${yesScale})`, ...yesJumpStyle }}
+              style={{ ...styles.yes, ...yesJumpStyle }}
             >
               YES 💕
             </button>
-            <button onClick={handleNo} style={styles.no}>NO 😈</button>
+            <button onClick={handleNo} style={styles.no}>
+              NO 😈
+            </button>
           </div>
+          {maxNoReached && (
+            <h1 style={{ ...styles.headline, color: "#7a003c" }}>
+              {recipientName} said NO 😢💔
+            </h1>
+          )}
         </>
       )}
 
       {answered && (
         <>
-          <h1 style={styles.headline}>
-            {recipientName} SAID YES 💖💖💖
-          </h1>
-          <img
-            src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
-            alt="cute cat"
-            style={{ width: "260px", marginTop: "20px" }}
-          />
+          {supabaseError ? (
+            <p style={styles.noMessage}>❌ Could not save your response 😿</p>
+          ) : (
+            <h1 style={styles.headline}>{recipientName} SAID YES 💖💖💖</h1>
+          )}
         </>
-      )}
-
-      {maxNoReached && (
-        <h1 style={styles.headline}>
-          {recipientName} said NO 😢 "{noMessages[Math.floor(Math.random() * noMessages.length)]}"
-        </h1>
       )}
     </div>
   );
 }
 
-// Styles (all in one)
 const styles = {
   container: {
     height: "100vh",
@@ -250,7 +290,6 @@ const styles = {
     backgroundColor: "#ff4d6d",
     color: "white",
     cursor: "pointer",
-    userSelect: "none",
   },
   linkBox: {
     border: "2px solid #ff4d6d",
@@ -263,9 +302,14 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    userSelect: "all",
   },
-  link: { color: "#b3003b", fontSize: "18px", margin: 0, flex: "1 1 auto", paddingRight: "15px" },
+  link: {
+    color: "#b3003b",
+    fontSize: "18px",
+    margin: 0,
+    flex: "1 1 auto",
+    paddingRight: "15px",
+  },
   copyBtn: {
     backgroundColor: "#ff4d6d",
     border: "none",
@@ -274,12 +318,16 @@ const styles = {
     padding: "8px 16px",
     borderRadius: "10px",
     cursor: "pointer",
-    userSelect: "none",
-    flexShrink: 0,
-    boxShadow: "0 4px 8px rgba(255,77,109,0.5)",
-    transition: "background-color 0.3s ease",
   },
-  buttons: { display: "flex", gap: "40px", marginTop: "40px", justifyContent: "center", alignItems: "center", minHeight: "80px", position: "relative" },
+  buttons: {
+    display: "flex",
+    gap: "40px",
+    marginTop: "40px",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "80px",
+    position: "relative",
+  },
   yes: {
     backgroundColor: "#ff4d6d",
     color: "white",
@@ -288,9 +336,7 @@ const styles = {
     cursor: "pointer",
     padding: "18px 36px",
     fontSize: "24px",
-    userSelect: "none",
     boxShadow: "0 4px 8px rgba(255,77,109,0.4)",
-    transition: "transform 0.3s ease",
     position: "relative",
   },
   no: {
@@ -301,9 +347,12 @@ const styles = {
     border: "none",
     borderRadius: "12px",
     cursor: "pointer",
-    userSelect: "none",
-    boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
-    transition: "background-color 0.3s ease",
+  },
+  noMessage: {
+    marginTop: "15px",
+    fontSize: "18px",
+    color: "#7a003c",
+    fontWeight: "bold",
   },
   notificationBar: {
     position: "fixed",
@@ -316,6 +365,5 @@ const styles = {
     fontSize: "18px",
     padding: "12px 20px",
     zIndex: 9999,
-    userSelect: "none",
   },
 };
