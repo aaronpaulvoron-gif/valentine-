@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
@@ -29,9 +29,13 @@ style.innerHTML = `
   100% { transform: translateX(0); }
 }
 @keyframes jump {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0); }
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(var(--jump-x), var(--jump-y)); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes copy-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 `;
 document.head.appendChild(style);
@@ -47,7 +51,12 @@ export default function App() {
   const [supabaseError, setSupabaseError] = useState(false);
   const [supabaseMissing, setSupabaseMissing] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [yesJump, setYesJump] = useState(false);
+
+  const [yesJumpKey, setYesJumpKey] = useState(0);
+  const [yesJumpStyle, setYesJumpStyle] = useState({});
+  const [copyAnim, setCopyAnim] = useState(false);
+
+  const yesBtnRef = useRef(null);
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -65,7 +74,9 @@ export default function App() {
   /* Generate Magic Link */
   function handleGenerateLink() {
     if (!name.trim()) return;
-    const link = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
+    const link = `${window.location.origin}?name=${encodeURIComponent(
+      name.trim()
+    )}`;
     setMagicLink(link);
     setSubmitted(true);
   }
@@ -99,17 +110,43 @@ export default function App() {
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   }
 
-  /* NO BUTTON */
+  /* NO BUTTON - triggers YES button jump */
   function handleNo() {
     if (noCount < 10) {
       const newCount = noCount + 1;
       setNoCount(newCount);
-      // YES button jumps after NO is clicked, but with slight delay
-      setTimeout(() => setYesJump(true), 300);
-      setTimeout(() => setYesJump(false), 900);
-
       if (newCount === 10) setMaxNoReached(true);
+
+      // Calculate random jump positions inside container bounds
+      if (yesBtnRef.current) {
+        const container = yesBtnRef.current.parentElement.getBoundingClientRect();
+        const btnRect = yesBtnRef.current.getBoundingClientRect();
+
+        // Max jump: container width/height minus button size minus some padding
+        const maxX = container.width - btnRect.width - 20;
+        const maxY = container.height - btnRect.height - 20;
+
+        // Generate random x,y within -maxX/2 to +maxX/2 (centered)
+        const randX = (Math.random() - 0.5) * maxX + "px";
+        const randY = (Math.random() - 0.5) * maxY + "px";
+
+        setYesJumpStyle({
+          "--jump-x": randX,
+          "--jump-y": randY,
+          animation: "jump 0.6s ease",
+        });
+
+        // Change key to re-trigger animation
+        setYesJumpKey((k) => k + 1);
+      }
     }
+  }
+
+  /* COPY LINK */
+  function handleCopyLink() {
+    navigator.clipboard.writeText(magicLink);
+    setCopyAnim(true);
+    setTimeout(() => setCopyAnim(false), 800);
   }
 
   /* URL PARAMS */
@@ -179,6 +216,16 @@ export default function App() {
           <h2 style={styles.headline}>Send this link to {name} 💘</h2>
           <div style={styles.linkBox}>
             <p style={styles.link}>{magicLink}</p>
+            <button
+              onClick={handleCopyLink}
+              style={{
+                ...styles.copyBtn,
+                animation: copyAnim ? "copy-bounce 0.8s ease" : "none",
+              }}
+              aria-label="Copy magic link"
+            >
+              Copy
+            </button>
           </div>
           {notification && <p style={styles.notification}>{notification}</p>}
         </>
@@ -193,11 +240,13 @@ export default function App() {
 
           <div style={styles.buttons}>
             <button
+              ref={yesBtnRef}
+              key={yesJumpKey}
               onClick={handleYes}
               style={{
                 ...styles.yes,
                 transform: `scale(${yesScale})`,
-                animation: yesJump ? "jump 0.6s ease" : "none",
+                ...yesJumpStyle,
               }}
               aria-label="Yes button"
             >
@@ -285,12 +334,30 @@ const styles = {
     maxWidth: "80vw",
     wordBreak: "break-word",
     backgroundColor: "rgba(255, 77, 109, 0.1)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
     userSelect: "all",
   },
   link: {
     color: "#b3003b",
     fontSize: "18px",
     margin: 0,
+    flex: "1 1 auto",
+    paddingRight: "15px",
+  },
+  copyBtn: {
+    backgroundColor: "#ff4d6d",
+    border: "none",
+    color: "white",
+    fontWeight: "bold",
+    padding: "8px 16px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    userSelect: "none",
+    flexShrink: 0,
+    boxShadow: "0 4px 8px rgba(255,77,109,0.5)",
+    transition: "background-color 0.3s ease",
   },
   buttons: {
     display: "flex",
@@ -298,6 +365,8 @@ const styles = {
     marginTop: "40px",
     justifyContent: "center",
     alignItems: "center",
+    minHeight: "80px", // enough height for jumping
+    position: "relative",
   },
   yes: {
     backgroundColor: "#ff4d6d",
@@ -310,6 +379,7 @@ const styles = {
     userSelect: "none",
     boxShadow: "0 4px 8px rgba(255,77,109,0.4)",
     transition: "transform 0.3s ease",
+    position: "relative",
   },
   no: {
     fontSize: "18px",
