@@ -15,7 +15,7 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-/* Floating & Shake animations */
+/* Floating animation */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
@@ -27,7 +27,13 @@ style.innerHTML = `
   50% { transform: translateX(10px); }
   75% { transform: translateX(-10px); }
   100% { transform: translateX(0); }
-}`;
+}
+@keyframes jump {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0); }
+}
+`;
 document.head.appendChild(style);
 
 export default function App() {
@@ -41,13 +47,7 @@ export default function App() {
   const [supabaseError, setSupabaseError] = useState(false);
   const [supabaseMissing, setSupabaseMissing] = useState(false);
   const [notification, setNotification] = useState(null);
-
-  // Track YES button position
-  const [yesPosition, setYesPosition] = useState({
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%) scale(1)",
-  });
+  const [yesJump, setYesJump] = useState(false);
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -64,8 +64,8 @@ export default function App() {
 
   /* Generate Magic Link */
   function handleGenerateLink() {
-    if (!name) return;
-    const link = `${window.location.origin}?name=${encodeURIComponent(name)}`;
+    if (!name.trim()) return;
+    const link = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
     setMagicLink(link);
     setSubmitted(true);
   }
@@ -104,18 +104,11 @@ export default function App() {
     if (noCount < 10) {
       const newCount = noCount + 1;
       setNoCount(newCount);
-      if (newCount === 10) setMaxNoReached(true);
+      // YES button jumps after NO is clicked, but with slight delay
+      setTimeout(() => setYesJump(true), 300);
+      setTimeout(() => setYesJump(false), 900);
 
-      // Make YES button jump randomly and scale up based on noCount
-      const top = Math.random() * 50 + 20 + "%"; // 20% to 70%
-      const left = Math.random() * 50 + 10 + "%"; // 10% to 60%
-      const scale = 1 + newCount * 0.3;
-      setYesPosition({
-        top,
-        left,
-        transform: `translate(-50%, -50%) scale(${scale})`,
-        transition: "all 0.5s ease",
-      });
+      if (newCount === 10) setMaxNoReached(true);
     }
   }
 
@@ -126,6 +119,9 @@ export default function App() {
   useEffect(() => {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
+
+  /* YES button scale */
+  const yesScale = 1 + noCount * 0.3;
 
   const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
 
@@ -170,6 +166,7 @@ export default function App() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter name..."
             style={styles.input}
+            autoFocus
           />
           <button onClick={handleGenerateLink} style={styles.button}>
             Generate Magic Link
@@ -195,10 +192,18 @@ export default function App() {
           {noCount > 0 && <p style={styles.noMessage}>{noMessage}</p>}
 
           <div style={styles.buttons}>
-            <button onClick={handleYes} style={{ ...styles.yes, ...yesPosition }}>
+            <button
+              onClick={handleYes}
+              style={{
+                ...styles.yes,
+                transform: `scale(${yesScale})`,
+                animation: yesJump ? "jump 0.6s ease" : "none",
+              }}
+              aria-label="Yes button"
+            >
               YES 💕
             </button>
-            <button onClick={handleNo} style={styles.no}>
+            <button onClick={handleNo} style={styles.no} aria-label="No button">
               NO 😈
             </button>
           </div>
@@ -251,6 +256,7 @@ const styles = {
     fontSize: "3rem",
     color: "#ff1a75",
     marginBottom: "20px",
+    userSelect: "none",
   },
   input: {
     padding: "10px",
@@ -258,7 +264,7 @@ const styles = {
     borderRadius: "8px",
     border: "1px solid #ccc",
     marginBottom: "15px",
-    width: "250px",
+    width: "280px",
     textAlign: "center",
   },
   button: {
@@ -269,33 +275,31 @@ const styles = {
     backgroundColor: "#ff4d6d",
     color: "white",
     cursor: "pointer",
+    userSelect: "none",
   },
   linkBox: {
     border: "2px solid #ff4d6d",
     borderRadius: "12px",
     padding: "12px 20px",
     marginTop: "10px",
-    backgroundColor: "#ffe3ea",
-    width: "100%",
-    maxWidth: "400px",
+    maxWidth: "80vw",
     wordBreak: "break-word",
-    boxShadow: "0 4px 8px rgba(255,77,109,0.3)",
+    backgroundColor: "rgba(255, 77, 109, 0.1)",
+    userSelect: "all",
   },
   link: {
-    color: "#ff1a75",
-    fontWeight: "bold",
+    color: "#b3003b",
     fontSize: "18px",
-    userSelect: "all",
-    cursor: "pointer",
+    margin: 0,
   },
   buttons: {
-    position: "relative",
-    width: "280px",
-    height: "150px",
+    display: "flex",
+    gap: "40px",
     marginTop: "40px",
+    justifyContent: "center",
+    alignItems: "center",
   },
   yes: {
-    position: "absolute",
     backgroundColor: "#ff4d6d",
     color: "white",
     border: "none",
@@ -303,37 +307,37 @@ const styles = {
     cursor: "pointer",
     padding: "18px 36px",
     fontSize: "24px",
-    transition: "all 0.5s ease",
     userSelect: "none",
+    boxShadow: "0 4px 8px rgba(255,77,109,0.4)",
+    transition: "transform 0.3s ease",
   },
   no: {
-    position: "absolute",
-    bottom: "20px",
-    left: "20px",
-    fontSize: "16px",
-    padding: "10px 18px",
+    fontSize: "18px",
+    padding: "14px 28px",
     backgroundColor: "#adb5bd",
     color: "white",
     border: "none",
-    borderRadius: "10px",
+    borderRadius: "12px",
     cursor: "pointer",
     userSelect: "none",
+    boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
+    transition: "background-color 0.3s ease",
   },
   noMessage: {
-    marginTop: "10px",
+    marginTop: "15px",
     fontSize: "18px",
     color: "#7a003c",
     fontWeight: "bold",
   },
   sadMessage: {
-    marginTop: "20px",
+    marginTop: "25px",
     fontSize: "20px",
     color: "#ff1a75",
     fontWeight: "bold",
     animation: "shake 0.6s",
   },
   notification: {
-    marginTop: "15px",
+    marginTop: "25px",
     fontSize: "20px",
     color: "#ff1a75",
     fontWeight: "bold",
