@@ -18,16 +18,9 @@ function createHeart() {
 /* Floating animation */
 const style = document.createElement("style");
 style.innerHTML = `
-@keyframes float {
-  to { transform: translateY(-120vh); opacity: 0; }
-}
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  50% { transform: translateX(10px); }
-  75% { transform: translateX(-10px); }
-  100% { transform: translateX(0); }
-}`;
+@keyframes float { to { transform: translateY(-120vh); opacity: 0; } }
+@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
+`;
 document.head.appendChild(style);
 
 export default function App() {
@@ -80,8 +73,6 @@ export default function App() {
     if (error) {
       console.error("Supabase insert error:", error);
       setSupabaseError(true);
-    } else {
-      console.log("Inserted:", data);
     }
 
     // Heart fireworks
@@ -108,11 +99,11 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  /* YES button scale & random position */
+  /* YES button scale & random position without overlapping NO */
   const yesScale = 1 + noCount * 0.3;
   const yesPosition = {
-    top: `${Math.random() * 60 + 20}%`,
-    left: `${Math.random() * 70 + 15}%`,
+    top: `${Math.random() * 50 + 20}%`, // top 20% - 70%
+    left: `${Math.random() * 50 + 10}%`, // left 10% - 60%
     position: "absolute",
     transform: `scale(${yesScale})`,
     transition: "all 0.5s ease",
@@ -153,6 +144,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* First person view */}
       {!urlName && !submitted && (
         <>
           <h1 style={styles.headline}>Type your crush's name 💌</h1>
@@ -172,12 +164,11 @@ export default function App() {
         <>
           <h2 style={styles.headline}>Send this link to {name} 💘</h2>
           <p style={styles.link}>{magicLink}</p>
-          {notification && (
-            <p style={styles.notification}>{notification}</p>
-          )}
+          {notification && <p style={styles.notification}>{notification}</p>}
         </>
       )}
 
+      {/* Second person view */}
       {urlName && !answered && (
         <>
           <h1 style={styles.headline}>{recipientName}, will you be my Valentine? 💘</h1>
@@ -200,6 +191,7 @@ export default function App() {
         </>
       )}
 
+      {/* Response view */}
       {answered && (
         <>
           {supabaseError ? (
