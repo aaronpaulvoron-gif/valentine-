@@ -26,11 +26,6 @@ style.innerHTML = `
   75% { transform: translateX(-6px); }
   100% { transform: translateX(0); }
 }
-@keyframes jump {
-  0% { transform: translate(0, 0); }
-  50% { transform: translate(var(--jump-x), var(--jump-y)); }
-  100% { transform: translate(0, 0); }
-}
 `;
 document.head.appendChild(style);
 
@@ -41,17 +36,18 @@ export default function App() {
   const [recipientName, setRecipientName] = useState("");
   const [answered, setAnswered] = useState(false);
   const [noCount, setNoCount] = useState(0);
+  const [finalNo, setFinalNo] = useState(false);
   const [quote, setQuote] = useState("");
-  const [notification, setNotification] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const yesBtnRef = useRef(null);
-  const noBtnRef = useRef(null);
+  const yesRef = useRef(null);
+  const noRef = useRef(null);
 
-  const romanticQuotes = [
+  const loveQuotes = [
     "You just made me the happiest person alive 💖",
-    "Best decision ever 😘",
     "Forever starts now 💍",
     "You + Me = Always 💞",
+    "This is the best YES ever 😘",
     "My heart is officially yours 💓",
   ];
 
@@ -71,28 +67,36 @@ export default function App() {
   }
 
   async function handleYes() {
-    setAnswered(true);
+    try {
+      const randomLove =
+        loveQuotes[Math.floor(Math.random() * loveQuotes.length)];
+      setQuote(randomLove);
+      setAnswered(true);
 
-    const randomLove =
-      romanticQuotes[Math.floor(Math.random() * romanticQuotes.length)];
-    setQuote(randomLove);
+      const { error } = await supabase.from("valentine_repone").insert([
+        {
+          name: recipientName,
+          answered_yes: true,
+          no_count: noCount,
+          no_message: null,
+        },
+      ]);
 
-    await supabase.from("valentine_respone").insert([
-      {
-        name: recipientName,
-        answered_yes: true,
-        no_count: noCount,
-        no_message: null,
-      },
-    ]);
+      if (error) throw error;
 
-    const interval = setInterval(createHeart, 120);
-    setTimeout(() => clearInterval(interval), 4000);
+      const interval = setInterval(createHeart, 120);
+      setTimeout(() => clearInterval(interval), 4000);
 
-    confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+      confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Supabase insert failed.");
+    }
   }
 
   async function handleNo() {
+    if (finalNo) return;
+
     const newCount = noCount + 1;
     setNoCount(newCount);
 
@@ -100,30 +104,40 @@ export default function App() {
       sadQuotes[Math.floor(Math.random() * sadQuotes.length)];
     setQuote(randomSad);
 
-    await supabase.from("valentine_respone").insert([
-      {
-        name: recipientName,
-        answered_yes: false,
-        no_count: newCount,
-        no_message: randomSad,
-      },
-    ]);
-
-    // YES grows slightly (MAX medium)
-    if (yesBtnRef.current) {
-      const baseWidth = 170;
-      const grow = Math.min(newCount * 8, 50); // max grow 50px
-      yesBtnRef.current.style.width = baseWidth + grow + "px";
-      yesBtnRef.current.style.boxShadow = `0 0 ${10 + grow}px rgba(255,77,109,0.7)`;
+    try {
+      const { error } = await supabase.from("valentine_repone").insert([
+        {
+          name: recipientName,
+          answered_yes: false,
+          no_count: newCount,
+          no_message: randomSad,
+        },
+      ]);
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Supabase insert failed.");
     }
 
-    // NO shakes
-    if (noBtnRef.current) {
-      noBtnRef.current.style.animation = "shake 0.4s";
+    // Grow YES slightly (MAX medium)
+    if (yesRef.current) {
+      const base = 170;
+      const grow = Math.min(newCount * 7, 50); // MAX 50px
+      yesRef.current.style.width = base + grow + "px";
+      yesRef.current.style.boxShadow = `0 0 ${10 + grow}px rgba(255,77,109,0.7)`;
+    }
+
+    // Shake NO
+    if (noRef.current) {
+      noRef.current.style.animation = "shake 0.4s";
       setTimeout(() => {
-        if (noBtnRef.current)
-          noBtnRef.current.style.animation = "none";
+        if (noRef.current) noRef.current.style.animation = "none";
       }, 400);
+    }
+
+    // After 10 presses → FINAL
+    if (newCount >= 10) {
+      setFinalNo(true);
     }
   }
 
@@ -138,7 +152,7 @@ export default function App() {
     <div style={styles.container}>
       {!urlName && !submitted && (
         <>
-          <h1 style={styles.headline}>Create a Valentine Proposal 💌</h1>
+          <h1 style={styles.title}>Create a Valentine Proposal 💌</h1>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -153,47 +167,51 @@ export default function App() {
 
       {magicLink && submitted && !urlName && (
         <>
-          <h2 style={styles.headline}>Send this to your crush 💘</h2>
+          <h2 style={styles.title}>Send this to your crush 💘</h2>
           <div style={styles.linkBox}>{magicLink}</div>
         </>
       )}
 
-      {urlName && !answered && (
+      {urlName && !answered && !finalNo && (
         <>
-          <h1 style={styles.bigQuestion}>
+          <h1 style={styles.big}>
             {recipientName}, will you be my Valentine?
           </h1>
 
           {quote && <p style={styles.quote}>{quote}</p>}
 
           <div style={styles.buttons}>
-            <button
-              ref={yesBtnRef}
-              onClick={handleYes}
-              style={styles.yes}
-            >
+            <button ref={yesRef} onClick={handleYes} style={styles.yes}>
               YES 💕
             </button>
 
-            <button
-              ref={noBtnRef}
-              onClick={handleNo}
-              style={styles.no}
-            >
+            <button ref={noRef} onClick={handleNo} style={styles.no}>
               NO 💔
             </button>
           </div>
+
+          <p style={styles.counter}>
+            NO pressed: {noCount} / 10
+          </p>
         </>
+      )}
+
+      {finalNo && (
+        <h1 style={styles.big}>
+          {recipientName} rejected you after 10 tries 😭💔
+        </h1>
       )}
 
       {answered && (
         <>
-          <h1 style={styles.bigQuestion}>
+          <h1 style={styles.big}>
             {recipientName} SAID YES 💖💖💖
           </h1>
           <p style={styles.quote}>{quote}</p>
         </>
       )}
+
+      {errorMsg && <p style={{ color: "white" }}>{errorMsg}</p>}
     </div>
   );
 }
@@ -209,31 +227,24 @@ const styles = {
     justifyContent: "center",
     textAlign: "center",
     padding: "20px",
-    overflow: "hidden",
   },
-
-  headline: {
+  title: {
     fontSize: "2.5rem",
     color: "white",
     marginBottom: "20px",
   },
-
-  bigQuestion: {
-    fontSize: "3.5rem",
+  big: {
+    fontSize: "3.2rem",
     color: "white",
     marginBottom: "20px",
   },
-
   input: {
     padding: "12px",
     fontSize: "18px",
     borderRadius: "10px",
     border: "none",
     marginBottom: "20px",
-    width: "260px",
-    textAlign: "center",
   },
-
   mainBtn: {
     padding: "12px 26px",
     fontSize: "18px",
@@ -243,51 +254,46 @@ const styles = {
     color: "white",
     cursor: "pointer",
   },
-
   linkBox: {
     background: "white",
     padding: "15px 25px",
     borderRadius: "12px",
     color: "#ff4d6d",
     fontWeight: "bold",
-    marginTop: "15px",
   },
-
   buttons: {
     display: "flex",
-    gap: "100px", // BIG GAP so they never touch
+    gap: "100px",
     marginTop: "40px",
-    alignItems: "center",
-    justifyContent: "center",
   },
-
   yes: {
-    backgroundColor: "#ff4d6d",
-    color: "white",
-    border: "none",
-    borderRadius: "16px",
-    cursor: "pointer",
-    fontSize: "22px",
     width: "170px",
     height: "70px",
+    fontSize: "22px",
+    borderRadius: "16px",
+    border: "none",
+    backgroundColor: "#ff4d6d",
+    color: "white",
+    cursor: "pointer",
     transition: "all 0.3s ease",
   },
-
   no: {
-    fontSize: "18px",
     width: "130px",
     height: "55px",
+    fontSize: "18px",
+    borderRadius: "12px",
+    border: "none",
     backgroundColor: "#6c757d",
     color: "white",
-    border: "none",
-    borderRadius: "12px",
     cursor: "pointer",
   },
-
   quote: {
-    marginTop: "15px",
     fontSize: "20px",
     color: "white",
     fontWeight: "bold",
+  },
+  counter: {
+    marginTop: "15px",
+    color: "white",
   },
 };
