@@ -14,35 +14,22 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-// CSS animations injected to the head
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
   to { transform: translateY(-120vh); opacity: 0; }
 }
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
+  0% { transform: translateX(0); }
   25% { transform: translateX(-10px); }
   50% { transform: translateX(10px); }
   75% { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
 }
-.toast {
-  position: fixed;
-  top: -80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #ff4d6d;
-  color: white;
-  padding: 15px 30px;
-  border-radius: 12px;
-  font-size: 18px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-  transition: top 0.5s ease;
-  z-index: 9999;
-  user-select: none;
-}
-.toast.show {
-  top: 20px;
+@keyframes jump {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(var(--jump-x), var(--jump-y)); }
+  100% { transform: translate(0, 0); }
 }
 `;
 document.head.appendChild(style);
@@ -57,14 +44,25 @@ export default function App() {
   const [maxNoReached, setMaxNoReached] = useState(false);
   const [supabaseError, setSupabaseError] = useState(false);
   const [supabaseMissing, setSupabaseMissing] = useState(false);
-  const [notificationMsg, setNotificationMsg] = useState(null);
-  const [showNotification, setShowNotification] = useState(false);
+  const [notification, setNotification] = useState(null);
 
-  const [yesPosition, setYesPosition] = useState({ top: "auto", left: "auto" });
-  const [yesScale, setYesScale] = useState(1);
+  const [yesJumpKey, setYesJumpKey] = useState(0);
+  const [yesJumpStyle, setYesJumpStyle] = useState({});
 
   const yesBtnRef = useRef(null);
-  const noBtnRef = useRef(null);
+
+  // Positions for big YES jumps, far from NO button area
+  // The screen center is 0,0; these values move YES far in random directions
+  const positions = [
+    { x: "-300px", y: "-200px" },
+    { x: "300px", y: "-200px" },
+    { x: "-350px", y: "150px" },
+    { x: "350px", y: "150px" },
+    { x: "0px", y: "-300px" },
+    { x: "-400px", y: "0px" },
+    { x: "400px", y: "0px" },
+    { x: "0px", y: "300px" },
+  ];
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -97,13 +95,15 @@ export default function App() {
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("valentine_respone")
-      .insert([{ name: recipientName, answered_yes: true, no_count: noCount }]);
+      .insert([{ name: recipientName, answered_yes: true, no_count: noCount, no_message: null }]);
 
     if (error) {
       console.error("Supabase insert error:", error);
       setSupabaseError(true);
+    } else {
+      console.log("Inserted yes response:", data);
     }
 
     const interval = setInterval(createHeart, 120);
@@ -112,42 +112,38 @@ export default function App() {
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   }
 
-  function handleNo() {
+  async function handleNo() {
     if (noCount < 10) {
       const newCount = noCount + 1;
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      const yesBtn = yesBtnRef.current;
-      const noBtn = noBtnRef.current;
-      if (yesBtn && noBtn) {
-        const yesRect = yesBtn.getBoundingClientRect();
-        const noRect = noBtn.getBoundingClientRect();
+      const sadQuote = noMessages[newCount - 1] || "I'm sad... 😢";
 
-        const btnWidth = yesRect.width;
-        const btnHeight = yesRect.height;
-        const maxX = window.innerWidth - btnWidth;
-        const maxY = window.innerHeight - btnHeight;
-
-        let newTop, newLeft;
-        let tries = 0;
-
-        // Keep trying random positions until it's far enough from NO button (> 150px)
-        do {
-          newLeft = Math.random() * maxX;
-          newTop = Math.random() * maxY;
-          tries++;
-          if (tries > 100) break; // fallback
-        } while (
-          Math.abs(newLeft - noRect.left) < 150 &&
-          Math.abs(newTop - noRect.top) < 150
-        );
-
-        setYesPosition({ top: newTop + "px", left: newLeft + "px" });
-
-        // Scale YES button but max 1.5 (to avoid covering NO)
-        setYesScale((prev) => Math.min(1 + newCount * 0.1, 1.5));
+      // Insert the NO response with sad quote to Supabase
+      try {
+        await supabase
+          .from("valentine_respone")
+          .insert([{ name: recipientName, answered_yes: false, no_count: newCount, no_message: sadQuote }]);
+      } catch (e) {
+        console.error("Supabase insert error on NO:", e);
       }
+
+      // Random big jump position for YES button (not near NO)
+      let nextPosIndex;
+      do {
+        nextPosIndex = Math.floor(Math.random() * positions.length);
+      } while (
+        yesJumpStyle["--jump-x"] === positions[nextPosIndex].x &&
+        yesJumpStyle["--jump-y"] === positions[nextPosIndex].y
+      );
+
+      setYesJumpStyle({
+        "--jump-x": positions[nextPosIndex].x,
+        "--jump-y": positions[nextPosIndex].y,
+        animation: "jump 0.6s ease",
+      });
+      setYesJumpKey((k) => k + 1);
     }
   }
 
@@ -162,49 +158,40 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  // Supabase listener to show notification on first person's screen
+  // Listen for real-time updates for notifications (both YES and NO) ONLY after first user submitted (i.e. name entered)
   useEffect(() => {
     if (!submitted) return;
+
     const channel = supabase
       .channel("valentine-channel")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "valentine_respone" },
         (payload) => {
-          if (payload.new.answered_yes) {
-            const user = payload.new.name || "Someone";
-            setNotificationMsg(`${user} said YES! 💖`);
-            setShowNotification(true);
-
+          const { name: responderName, answered_yes, no_count, no_message } = payload.new;
+          if (answered_yes) {
+            setNotification(`${responderName} said YES! 💖`);
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
-
-            setTimeout(() => setShowNotification(false), 4000);
+          } else {
+            setNotification(`No ${no_count} times: "${no_message}" 😢`);
           }
         }
       )
       .subscribe();
+
     return () => supabase.removeChannel(channel);
   }, [submitted]);
 
-  if (supabaseMissing)
-    return (
-      <div style={styles.container}>
-        <h1>Oops! Supabase not configured 😿</h1>
-        <p>
-          Make sure your <code>VITE_SUPABASE_URL</code> and{" "}
-          <code>VITE_SUPABASE_ANON_KEY</code> are set.
-        </p>
-      </div>
-    );
+  // Make Yes button scale moderately with noCount but capped max scale 1.5
+  const yesScale = Math.min(1 + noCount * 0.1, 1.5);
 
   return (
     <div style={styles.container}>
-      {/* Notification Toast */}
-      <div className={`toast ${showNotification ? "show" : ""}`}>
-        {notificationMsg}
-      </div>
+      {/* Notification bar for first person */}
+      {!urlName && submitted && notification && (
+        <div style={styles.notificationBar}>{notification}</div>
+      )}
 
-      {/* First person view */}
       {!urlName && !submitted && (
         <>
           <h1 style={styles.headline}>Type your crush's name 💌</h1>
@@ -221,7 +208,6 @@ export default function App() {
         </>
       )}
 
-      {/* First person copy link view */}
       {magicLink && submitted && !urlName && (
         <>
           <h2 style={styles.headline}>Send this link to {name} 💘</h2>
@@ -238,39 +224,28 @@ export default function App() {
         </>
       )}
 
-      {/* Second person view */}
       {urlName && !answered && (
         <>
           <h1 style={styles.headline}>
             {recipientName}, will you be my Valentine? 💘
           </h1>
-          {noCount > 0 && (
-            <p style={styles.noMessage}>{noMessages[Math.min(noCount - 1, noMessages.length - 1)]}</p>
-          )}
+          {noCount > 0 && <p style={styles.noMessage}>{noMessages[Math.min(noCount - 1, noMessages.length - 1)]}</p>}
 
           <div style={styles.buttons}>
             <button
               ref={yesBtnRef}
+              key={yesJumpKey}
               onClick={handleYes}
               style={{
                 ...styles.yes,
                 transform: `scale(${yesScale})`,
-                position: "fixed",
-                top: yesPosition.top,
-                left: yesPosition.left,
-                transition: "top 0.4s ease, left 0.4s ease, transform 0.3s ease",
-                zIndex: 10,
+                ...yesJumpStyle,
               }}
               aria-label="Yes button"
             >
               YES 💕
             </button>
-            <button
-              ref={noBtnRef}
-              onClick={handleNo}
-              style={styles.no}
-              aria-label="No button"
-            >
+            <button onClick={handleNo} style={styles.no} aria-label="No button">
               NO 😈
             </button>
           </div>
@@ -283,7 +258,6 @@ export default function App() {
         </>
       )}
 
-      {/* Response view */}
       {answered && (
         <>
           {supabaseError ? (
@@ -380,7 +354,7 @@ const styles = {
   },
   buttons: {
     display: "flex",
-    gap: "30px",
+    gap: "40px",
     marginTop: "40px",
     justifyContent: "center",
     alignItems: "center",
@@ -397,6 +371,8 @@ const styles = {
     fontSize: "24px",
     userSelect: "none",
     boxShadow: "0 4px 8px rgba(255,77,109,0.4)",
+    transition: "transform 0.3s ease",
+    position: "relative",
   },
   no: {
     fontSize: "18px",
@@ -408,6 +384,7 @@ const styles = {
     cursor: "pointer",
     userSelect: "none",
     boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
+    transition: "background-color 0.3s ease",
   },
   noMessage: {
     marginTop: "15px",
@@ -421,5 +398,24 @@ const styles = {
     color: "#ff1a75",
     fontWeight: "bold",
     animation: "shake 0.6s",
+  },
+  notificationBar: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    backgroundColor: "#ff4d6d",
+    color: "white",
+    fontWeight: "bold",
+    fontSize: "18px",
+    padding: "12px 20px",
+    zIndex: 9999,
+    userSelect: "none",
+  },
+  notification: {
+    marginTop: "25px",
+    fontSize: "20px",
+    color: "#ff1a75",
+    fontWeight: "bold",
   },
 };
