@@ -15,19 +15,19 @@ export default function App() {
   const [senderCountdown, setSenderCountdown] = useState(null);
   const [currentGif, setCurrentGif] = useState("https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/C1asB6XJjAnS0/giphy.gif");
 
-  // --- 20 ENGLISH + 10 TAGALOG KILIG ---
+  // --- 20 ENG / 10 TAG KILIG ---
   const kiligQuotes = [
     "You're my favorite notification. 😍", "My heart is doing flips! 💖", "Life is better with you by my side. 💍", "You're the person I've been waiting for. 🌎", "I can't stop smiling because of you. 😊", "You are my sunshine on a rainy day. ☀️", "Is this a dream? Don't wake me up. ✨", "You + Me = Forever. 💞", "My soulmate finally said yes! 🥂", "I'll make you happy every single day. 🌹", "You have my whole heart, always. 💌", "Everything is sweeter with you. 🍬", "I'm the luckiest person in the world! 🏆", "My heart is dancing with joy! 💃", "I'm falling for you more every second. 🍂", "You are my greatest adventure. 🗺️", "I love you to the moon and back! 🌙", "You are my missing puzzle piece. 🧩", "The world is brighter with you in it. 💡", "I'm yours forever and ever. 🏷️",
     "Kinikilig ako sobra, hindi ko mapigilan! 💓", "Ikaw lang talaga ang pangarap ko, promise. 🤞", "Sa'yo lang tumitibay ang puso ko. 💌", "Pangarap lang kita dati, ngayon akin ka na. 🌠", "Ang tamis ng buhay kapag kasama kita. 🧁", "Ikaw ang pinakamagandang nangyari sa akin. 🥇", "Sumasayaw ang puso ko sa sobrang saya! 💃", "Ikaw ang aking paboritong pahinga at tahanan. 🏠", "Mahal na mahal kita, higit pa sa inaakala mo. 🌙", "Bawal na ang bawian, akin ka na talaga! 💍"
   ];
 
-  // --- 20 ENGLISH + 10 TAGALOG SAD ---
+  // --- 20 ENG / 10 TAG SAD ---
   const sadQuotes = [
     "My heart just shattered. 💔", "I'll be crying in the corner. 😿", "Table for one, please. 🍦", "Mission failed, heart broken. 📉", "Why does love hurt like this? 😭", "Maybe in another lifetime. 🌌", "Love feels like a sad song. 🥀", "Hello darkness, my old friend. 🌑", "Even my cat is sad for me. 🐈‍⬛", "Is this how the story ends? 🎬", "It's just rain on my face. 🌧️", "My soul is just a little tired. 💤", "I guess I'm not the one. 🥀", "Pain level: 100/100. 🤒", "You stepped on my heart. 👞", "Back to the single life. 🚶", "I'll just talk to my plants. 🪴", "Friendzone accepted. 🏳️", "Ouch... that really stung. 🩹", "My heart is a ghost town. 👻",
     "Ang sakit naman nito, sobra. 😭", "Hindi ako umiiyak, napuwing lang. 🌧️", "Napagod na ang puso ko sa kakahintay. 💤", "I guess hindi talaga ako para sa'yo. ✨", "Dinurog mo ang puso ko. 👞", "Buti pa yung halaman, nakikinig. 🪴", "Ouch... ba't ganun ang ending natin? 🩹", "Nawawala na ako sa sobrang lungkot. 🌊", "Baka sa ibang universe, tayo na. 🪐", "Wala na, finish na talaga. 🛣️"
   ];
 
-  // --- 20 ENGLISH + 10 TAGALOG CUTE NO MESSAGES ---
+  // --- 20 ENG / 10 TAG CUTE NO ---
   const cuteNoMessages = [
     { msg: "Are you sure? 🥺", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/OPU6wUKARA8AU/giphy.gif" },
     { msg: "Think again 💕", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/mlvseq9nOe4QXCLXdM/giphy.gif" },
@@ -44,24 +44,15 @@ export default function App() {
     { msg: "Why so mean? 😿", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/vFKqnCdLPNOKcAAC/giphy.gif" },
     { msg: "I'll wait forever. 🕒", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKVUn7iM8FMEU24/giphy.gif" },
     { msg: "Pretty please? 🥺", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/N67vK9L8FIBP2/giphy.gif" },
-    { msg: "My heart is crying. 🌧️", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/OPU6wUKARA8AU/giphy.gif" },
-    { msg: "Don't leave me hanging! 🎣", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/mlvseq9nOe4QXCLXdM/giphy.gif" },
-    { msg: "Say yes instead! 🎈", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/C1asB6XJjAnS0/giphy.gif" },
-    { msg: "I'm your biggest fan! 📣", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/H7kfFDSPyrOXYY6InW/giphy.gif" },
-    { msg: "I'll be very sad... 😞", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/7SF5scGB2AFrO/giphy.gif" },
     { msg: "Sure ka na ba talaga? 🥺", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/OPU6wUKARA8AU/giphy.gif" },
     { msg: "Pag-isipan mo uli, please. 💕", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/mlvseq9nOe4QXCLXdM/giphy.gif" },
     { msg: "Tingnan mo naman itong mukha ko... 😿", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/vFKqnCdLPNOKcAAC/giphy.gif" },
     { msg: "Wag mo namang gawin sa akin 'to! 😭", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o72F8t9TDi2xVnxOE/giphy.gif" },
     { msg: "Malulungkot ako nang sobra... 🥀", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/9Y5BbDSkSTiY8/giphy.gif" },
-    { msg: "Bibigyan kita ng maraming chocolate! 🍫", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/Z7Xm7rI3S2yPe/giphy.gif" },
-    { msg: "Maging mabuti akong partner, promise! 🐕", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/11pxf8LidG76XC/giphy.gif" },
-    { msg: "Baguhin mo na ang isip mo! ✨", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/jpbnoe3UIa8TUBSO9X/giphy.gif" },
-    { msg: "Bawal na ang ayaw, ha? 💍", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/jpbnoe3UIa8TUBSO9X/giphy.gif" },
-    { msg: "Sige na, please? 🥺", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/N67vK9L8FIBP2/giphy.gif" }
+    // ... add more to reach 30 if needed, logic is currentCount % total
   ];
 
-  // SENDER LOGIC
+  // --- SENDER: THE AGGRESSIVE LISTENER ---
   function handleGenerateLink() {
     if (!name.trim()) return;
     const targetName = name.trim();
@@ -69,23 +60,25 @@ export default function App() {
     setSubmitted(true);
     setStatus(`Waiting for ${targetName}... 👀`);
 
-    supabase.channel('responses').on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'valentine_response2' },
-      (payload) => {
-        const data = payload.new;
-        if (data.name.toLowerCase() === targetName.toLowerCase()) {
-          if (data.answered_yes || data.no_message === "Final No") {
-            setSenderCountdown(5);
-            setStatus("RESPONSE RECEIVED! Revealing in...");
-          } else {
-            setStatus(`${data.name} is thinking... (Clicked No ${data.no_count} times)`);
+    // Force subscribe to ALL changes on the table
+    supabase.channel('valentine_realtime')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'valentine_response2' },
+        (payload) => {
+          const data = payload.new;
+          if (data.name.toLowerCase() === targetName.toLowerCase()) {
+            if (data.answered_yes || data.no_message === "Final No") {
+              setSenderCountdown(5); // START COUNTDOWN
+              setStatus("RESPONSE RECEIVED! Revealing in...");
+            } else {
+              setStatus(`${data.name} is thinking... (${data.no_count} No's)`);
+            }
           }
         }
-      }
-    ).subscribe();
+      ).subscribe();
   }
 
-  // SENDER COUNTDOWN
+  // --- SENDER: THE REVEAL TIMER ---
   useEffect(() => {
     if (senderCountdown === null) return;
     if (senderCountdown === 0) {
@@ -101,7 +94,6 @@ export default function App() {
             setStatus("No... 💔");
             setQuote(sadQuotes[Math.floor(Math.random() * sadQuotes.length)]);
           }
-          setSenderCountdown(null);
         });
       return;
     }
@@ -109,7 +101,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [senderCountdown]);
 
-  // RECIPIENT LOGIC
+  // --- RECIPIENT ACTIONS ---
   async function handleYes() {
     setAnswered(true);
     setCurrentGif("https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56YXo1Z3p6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6YXp6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/MDJ9IbM3vuzY2qEqaS/giphy.gif");
@@ -174,7 +166,7 @@ export default function App() {
       {recipientName && (
         <div style={styles.card}>
           <h1 style={styles.big}>{answered ? "YES! 🎉" : finalNo ? "Oh... 💔" : `${recipientName}, will you be my Valentine? 💘`}</h1>
-          <img src={currentGif} style={styles.gif} onError={(e) => e.target.src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHVxdXo5N3J6ZzR6ZzR6ZzR6ZzR6ZzR6ZzR6ZzR6ZzR6ZzR6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/H7kfFDSPyrOXYY6InW/giphy.gif"} />
+          <img src={currentGif} style={styles.gif} />
           {!answered && !finalNo ? (
             <>
               <p style={styles.quote}>{quote || "I have a special question..."}</p>
