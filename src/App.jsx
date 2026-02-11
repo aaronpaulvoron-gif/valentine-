@@ -42,6 +42,7 @@ export default function App() {
 
   const yesRef = useRef(null);
   const noRef = useRef(null);
+  const linkRef = useRef(null);
 
   const loveQuotes = [
     "You just made me the happiest person alive 💖",
@@ -51,12 +52,16 @@ export default function App() {
     "My heart is officially yours 💓",
   ];
 
-  const sadQuotes = [
-    "That hurt a little 🥺",
-    "Ouch… my heart 💔",
-    "Please reconsider 😢",
-    "I’ll wait forever 💘",
-    "You’re breaking my heart 😭",
+  const reconsiderQuotes = [
+    "Wait… maybe think again 🥺",
+    "Are you sure? 😢",
+    "I promise to be cute forever! 🐱",
+    "I'll buy you snacks 🍫",
+    "Please don't go 😭",
+    "My cat thinks we're dating 😖",
+    "I'll wait forever 💘",
+    "Just reconsider 🥹",
+    "One more chance? 😻"
   ];
 
   function handleGenerateLink() {
@@ -100,9 +105,15 @@ export default function App() {
     const newCount = noCount + 1;
     setNoCount(newCount);
 
-    const randomSad =
-      sadQuotes[Math.floor(Math.random() * sadQuotes.length)];
-    setQuote(randomSad);
+    let message = "";
+    if (newCount < 10) {
+      message = reconsiderQuotes[Math.min(newCount - 1, reconsiderQuotes.length - 1)];
+    } else {
+      message = "Final NO 😿";
+      setFinalNo(true);
+    }
+
+    setQuote(message);
 
     try {
       const { error } = await supabase.from("valentine_repone").insert([
@@ -110,7 +121,7 @@ export default function App() {
           name: recipientName,
           answered_yes: false,
           no_count: newCount,
-          no_message: randomSad,
+          no_message: message,
         },
       ]);
       if (error) throw error;
@@ -134,11 +145,17 @@ export default function App() {
         if (noRef.current) noRef.current.style.animation = "none";
       }, 400);
     }
+  }
 
-    // After 10 presses → FINAL
-    if (newCount >= 10) {
-      setFinalNo(true);
-    }
+  function handleCopy() {
+    if (!linkRef.current) return;
+    const el = linkRef.current;
+    navigator.clipboard.writeText(el.innerText);
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
 
   const params = new URLSearchParams(window.location.search);
@@ -168,7 +185,10 @@ export default function App() {
       {magicLink && submitted && !urlName && (
         <>
           <h2 style={styles.title}>Send this to your crush 💘</h2>
-          <div style={styles.linkBox}>{magicLink}</div>
+          <div style={styles.linkBox}>
+            <span ref={linkRef}>{magicLink}</span>
+            <button style={styles.copyBtn} onClick={handleCopy}>Copy</button>
+          </div>
         </>
       )}
 
@@ -197,9 +217,16 @@ export default function App() {
       )}
 
       {finalNo && (
-        <h1 style={styles.big}>
-          {recipientName} rejected you after 10 tries 😭💔
-        </h1>
+        <>
+          <h1 style={styles.big}>
+            {recipientName} rejected you after 10 tries 😿💔
+          </h1>
+          <img
+            src="https://i.imgur.com/3kHqL0D.gif"
+            alt="crying cat"
+            style={{ width: "250px", marginTop: "20px" }}
+          />
+        </>
       )}
 
       {answered && (
@@ -255,11 +282,22 @@ const styles = {
     cursor: "pointer",
   },
   linkBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
     background: "white",
     padding: "15px 25px",
     borderRadius: "12px",
     color: "#ff4d6d",
     fontWeight: "bold",
+  },
+  copyBtn: {
+    backgroundColor: "#ff4d6d",
+    border: "none",
+    color: "white",
+    padding: "8px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
   },
   buttons: {
     display: "flex",
