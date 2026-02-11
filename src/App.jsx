@@ -52,10 +52,23 @@ export default function App() {
 
   const [yesJumpKey, setYesJumpKey] = useState(0);
   const [yesJumpStyle, setYesJumpStyle] = useState({});
-  const [copyAnim, setCopyAnim] = useState(false);
 
   const yesBtnRef = useRef(null);
   const buttonsContainerRef = useRef(null);
+
+  // Positions (x, y in px relative to center) for YES jumps
+  // We'll define 8 positions around the center: corners and edges
+  const positions = [
+    { x: -150, y: -60 },  // top-left
+    { x: 0, y: -90 },     // top-center
+    { x: 150, y: -60 },   // top-right
+    { x: 180, y: 0 },     // right-center
+    { x: 150, y: 60 },    // bottom-right
+    { x: 0, y: 90 },      // bottom-center
+    { x: -150, y: 60 },   // bottom-left
+    { x: -180, y: 0 },    // left-center
+    { x: 0, y: 0 },       // center (original position)
+  ];
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -111,46 +124,34 @@ export default function App() {
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      if (yesBtnRef.current && buttonsContainerRef.current) {
-        const container = buttonsContainerRef.current.getBoundingClientRect();
-        const btnRect = yesBtnRef.current.getBoundingClientRect();
+      // Randomly pick a new position different from current
+      const currentPos = yesJumpStyle["--jump-x"]
+        ? positions.findIndex(
+            (pos) =>
+              pos.x + "px" === yesJumpStyle["--jump-x"] &&
+              pos.y + "px" === yesJumpStyle["--jump-y"]
+          )
+        : 8; // center index if undefined
 
-        // Container top-left relative to viewport
-        // Button width and height
-        const maxX = container.width - btnRect.width - 20; // padding 20px total
-        const maxY = container.height - btnRect.height - 20;
+      let nextPosIndex;
+      do {
+        nextPosIndex = Math.floor(Math.random() * positions.length);
+      } while (nextPosIndex === currentPos);
 
-        // Random position inside container (relative to container)
-        const randX = Math.random() * maxX;
-        const randY = Math.random() * maxY;
+      const newPos = positions[nextPosIndex];
 
-        // Position relative to container center, for translate:
-        // We want to translate so that YES button moves to new position inside container
-        // The YES button original position is centered inside container
-        // So shift from center by (randX - centerX), (randY - centerY)
-        // Container center:
-        const centerX = container.width / 2 - btnRect.width / 2;
-        const centerY = container.height / 2 - btnRect.height / 2;
-
-        // Translate values (offset from center)
-        const offsetX = randX - centerX;
-        const offsetY = randY - centerY;
-
-        setYesJumpStyle({
-          "--jump-x": `${offsetX}px`,
-          "--jump-y": `${offsetY}px`,
-          animation: "jump 0.6s ease",
-        });
-
-        setYesJumpKey((k) => k + 1);
-      }
+      setYesJumpStyle({
+        "--jump-x": `${newPos.x}px`,
+        "--jump-y": `${newPos.y}px`,
+        animation: "jump 0.6s ease",
+      });
+      setYesJumpKey((k) => k + 1);
     }
   }
 
   function handleCopyLink() {
     navigator.clipboard.writeText(magicLink);
-    setCopyAnim(true);
-    setTimeout(() => setCopyAnim(false), 800);
+    setTimeout(() => {}, 0); // Just a placeholder if you want animation
   }
 
   const params = new URLSearchParams(window.location.search);
@@ -218,10 +219,7 @@ export default function App() {
             <p style={styles.link}>{magicLink}</p>
             <button
               onClick={handleCopyLink}
-              style={{
-                ...styles.copyBtn,
-                animation: copyAnim ? "copy-bounce 0.8s ease" : "none",
-              }}
+              style={styles.copyBtn}
               aria-label="Copy magic link"
             >
               Copy
