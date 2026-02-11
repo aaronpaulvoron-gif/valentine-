@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
-// Floating hearts effect
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -15,29 +14,40 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-// Animations
+// CSS animations injected to the head
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
   to { transform: translateY(-120vh); opacity: 0; }
 }
 @keyframes shake {
-  0% { transform: translateX(0); }
+  0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-10px); }
   50% { transform: translateX(10px); }
   75% { transform: translateX(-10px); }
-  100% { transform: translateX(0); }
 }
-@keyframes jump {
-  0% { transform: transform(0,0); }
-  50% { transform: translate(var(--jump-x), var(--jump-y)); }
-  100% { transform: transform(0,0); }
+.toast {
+  position: fixed;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4d6d;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 12px;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  transition: top 0.5s ease;
+  z-index: 9999;
+  user-select: none;
+}
+.toast.show {
+  top: 20px;
 }
 `;
 document.head.appendChild(style);
 
 export default function App() {
-  // States
   const [name, setName] = useState("");
   const [magicLink, setMagicLink] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -47,12 +57,14 @@ export default function App() {
   const [maxNoReached, setMaxNoReached] = useState(false);
   const [supabaseError, setSupabaseError] = useState(false);
   const [supabaseMissing, setSupabaseMissing] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [notificationMsg, setNotificationMsg] = useState(null);
+  const [showNotification, setShowNotification] = useState(false);
 
-  const [yesJumpKey, setYesJumpKey] = useState(0);
-  const [yesJumpStyle, setYesJumpStyle] = useState({});
+  const [yesPosition, setYesPosition] = useState({ top: "auto", left: "auto" });
+  const [yesScale, setYesScale] = useState(1);
 
   const yesBtnRef = useRef(null);
+  const noBtnRef = useRef(null);
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -67,7 +79,6 @@ export default function App() {
     "I’ll wait forever if I have to 💘",
   ];
 
-  // First person generates the magic link
   function handleGenerateLink() {
     if (!name.trim()) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(
@@ -77,7 +88,6 @@ export default function App() {
     setSubmitted(true);
   }
 
-  // YES clicked by second person
   async function handleYes() {
     setAnswered(true);
 
@@ -87,7 +97,7 @@ export default function App() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("valentine_respone")
       .insert([{ name: recipientName, answered_yes: true, no_count: noCount }]);
 
@@ -96,39 +106,47 @@ export default function App() {
       setSupabaseError(true);
     }
 
-    // Hearts animation
     const interval = setInterval(createHeart, 120);
     setTimeout(() => clearInterval(interval), 4500);
 
-    // Confetti
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   }
 
-  // NO clicked by second person
   function handleNo() {
     if (noCount < 10) {
       const newCount = noCount + 1;
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      const btn = yesBtnRef.current;
-      if (btn) {
-        const btnWidth = btn.offsetWidth;
-        const btnHeight = btn.offsetHeight;
+      const yesBtn = yesBtnRef.current;
+      const noBtn = noBtnRef.current;
+      if (yesBtn && noBtn) {
+        const yesRect = yesBtn.getBoundingClientRect();
+        const noRect = noBtn.getBoundingClientRect();
+
+        const btnWidth = yesRect.width;
+        const btnHeight = yesRect.height;
         const maxX = window.innerWidth - btnWidth;
         const maxY = window.innerHeight - btnHeight;
 
-        // Generate a random position far from NO button (big jump)
-        const randomX = Math.random() * maxX;
-        const randomY = Math.random() * maxY;
+        let newTop, newLeft;
+        let tries = 0;
 
-        setYesJumpStyle({
-          position: "fixed",
-          top: `${randomY}px`,
-          left: `${randomX}px`,
-          animation: "jump 0.6s ease",
-        });
-        setYesJumpKey((k) => k + 1);
+        // Keep trying random positions until it's far enough from NO button (> 150px)
+        do {
+          newLeft = Math.random() * maxX;
+          newTop = Math.random() * maxY;
+          tries++;
+          if (tries > 100) break; // fallback
+        } while (
+          Math.abs(newLeft - noRect.left) < 150 &&
+          Math.abs(newTop - noRect.top) < 150
+        );
+
+        setYesPosition({ top: newTop + "px", left: newLeft + "px" });
+
+        // Scale YES button but max 1.5 (to avoid covering NO)
+        setYesScale((prev) => Math.min(1 + newCount * 0.1, 1.5));
       }
     }
   }
@@ -137,7 +155,6 @@ export default function App() {
     navigator.clipboard.writeText(magicLink);
   }
 
-  // Get recipient name from URL
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -145,10 +162,7 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  const yesScale = 1 + noCount * 0.3;
-  const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
-
-  // Listen to Supabase for YES responses (first person notification)
+  // Supabase listener to show notification on first person's screen
   useEffect(() => {
     if (!submitted) return;
     const channel = supabase
@@ -157,10 +171,14 @@ export default function App() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "valentine_respone" },
         (payload) => {
-          const { name, answered_yes } = payload.new;
-          if (answered_yes) {
-            setNotification(`${name} said YES! 💖`);
+          if (payload.new.answered_yes) {
+            const user = payload.new.name || "Someone";
+            setNotificationMsg(`${user} said YES! 💖`);
+            setShowNotification(true);
+
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+
+            setTimeout(() => setShowNotification(false), 4000);
           }
         }
       )
@@ -181,6 +199,11 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* Notification Toast */}
+      <div className={`toast ${showNotification ? "show" : ""}`}>
+        {notificationMsg}
+      </div>
+
       {/* First person view */}
       {!urlName && !submitted && (
         <>
@@ -195,10 +218,6 @@ export default function App() {
           <button onClick={handleGenerateLink} style={styles.button}>
             Generate Magic Link
           </button>
-
-          {notification && (
-            <div style={styles.notificationBar}>{notification}</div>
-          )}
         </>
       )}
 
@@ -225,23 +244,33 @@ export default function App() {
           <h1 style={styles.headline}>
             {recipientName}, will you be my Valentine? 💘
           </h1>
-          {noCount > 0 && <p style={styles.noMessage}>{noMessage}</p>}
+          {noCount > 0 && (
+            <p style={styles.noMessage}>{noMessages[Math.min(noCount - 1, noMessages.length - 1)]}</p>
+          )}
 
           <div style={styles.buttons}>
             <button
               ref={yesBtnRef}
-              key={yesJumpKey}
               onClick={handleYes}
               style={{
                 ...styles.yes,
                 transform: `scale(${yesScale})`,
-                ...yesJumpStyle,
+                position: "fixed",
+                top: yesPosition.top,
+                left: yesPosition.left,
+                transition: "top 0.4s ease, left 0.4s ease, transform 0.3s ease",
+                zIndex: 10,
               }}
               aria-label="Yes button"
             >
               YES 💕
             </button>
-            <button onClick={handleNo} style={styles.no} aria-label="No button">
+            <button
+              ref={noBtnRef}
+              onClick={handleNo}
+              style={styles.no}
+              aria-label="No button"
+            >
               NO 😈
             </button>
           </div>
@@ -351,7 +380,7 @@ const styles = {
   },
   buttons: {
     display: "flex",
-    gap: "40px",
+    gap: "30px",
     marginTop: "40px",
     justifyContent: "center",
     alignItems: "center",
@@ -368,8 +397,6 @@ const styles = {
     fontSize: "24px",
     userSelect: "none",
     boxShadow: "0 4px 8px rgba(255,77,109,0.4)",
-    transition: "transform 0.3s ease",
-    position: "relative",
   },
   no: {
     fontSize: "18px",
@@ -381,7 +408,6 @@ const styles = {
     cursor: "pointer",
     userSelect: "none",
     boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
-    transition: "background-color 0.3s ease",
   },
   noMessage: {
     marginTop: "15px",
@@ -395,24 +421,5 @@ const styles = {
     color: "#ff1a75",
     fontWeight: "bold",
     animation: "shake 0.6s",
-  },
-  notificationBar: {
-    position: "fixed",
-    top: "10px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    backgroundColor: "#ff4d6d",
-    color: "white",
-    padding: "10px 20px",
-    borderRadius: "12px",
-    fontSize: "18px",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-    zIndex: 1000,
-  },
-  notification: {
-    marginTop: "25px",
-    fontSize: "20px",
-    color: "#ff1a75",
-    fontWeight: "bold",
   },
 };
