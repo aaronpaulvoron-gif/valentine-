@@ -54,21 +54,6 @@ export default function App() {
   const [yesJumpStyle, setYesJumpStyle] = useState({});
 
   const yesBtnRef = useRef(null);
-  const buttonsContainerRef = useRef(null);
-
-  // Positions (x, y in px relative to center) for YES jumps
-  // We'll define 8 positions around the center: corners and edges
-  const positions = [
-    { x: -150, y: -60 },  // top-left
-    { x: 0, y: -90 },     // top-center
-    { x: 150, y: -60 },   // top-right
-    { x: 180, y: 0 },     // right-center
-    { x: 150, y: 60 },    // bottom-right
-    { x: 0, y: 90 },      // bottom-center
-    { x: -150, y: 60 },   // bottom-left
-    { x: -180, y: 0 },    // left-center
-    { x: 0, y: 0 },       // center (original position)
-  ];
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -108,8 +93,6 @@ export default function App() {
     if (error) {
       console.error("Supabase insert error:", error);
       setSupabaseError(true);
-    } else {
-      console.log("Inserted:", data);
     }
 
     const interval = setInterval(createHeart, 120);
@@ -124,34 +107,29 @@ export default function App() {
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      // Randomly pick a new position different from current
-      const currentPos = yesJumpStyle["--jump-x"]
-        ? positions.findIndex(
-            (pos) =>
-              pos.x + "px" === yesJumpStyle["--jump-x"] &&
-              pos.y + "px" === yesJumpStyle["--jump-y"]
-          )
-        : 8; // center index if undefined
+      // Random position anywhere on the screen
+      const btn = yesBtnRef.current;
+      if (btn) {
+        const btnWidth = btn.offsetWidth;
+        const btnHeight = btn.offsetHeight;
+        const maxX = window.innerWidth - btnWidth;
+        const maxY = window.innerHeight - btnHeight;
+        const randomX = Math.random() * maxX;
+        const randomY = Math.random() * maxY;
 
-      let nextPosIndex;
-      do {
-        nextPosIndex = Math.floor(Math.random() * positions.length);
-      } while (nextPosIndex === currentPos);
-
-      const newPos = positions[nextPosIndex];
-
-      setYesJumpStyle({
-        "--jump-x": `${newPos.x}px`,
-        "--jump-y": `${newPos.y}px`,
-        animation: "jump 0.6s ease",
-      });
-      setYesJumpKey((k) => k + 1);
+        setYesJumpStyle({
+          position: "fixed",
+          top: `${randomY}px`,
+          left: `${randomX}px`,
+          animation: "jump 0.6s ease",
+        });
+        setYesJumpKey((k) => k + 1);
+      }
     }
   }
 
   function handleCopyLink() {
     navigator.clipboard.writeText(magicLink);
-    setTimeout(() => {}, 0); // Just a placeholder if you want animation
   }
 
   const params = new URLSearchParams(window.location.search);
@@ -236,7 +214,7 @@ export default function App() {
           </h1>
           {noCount > 0 && <p style={styles.noMessage}>{noMessage}</p>}
 
-          <div style={styles.buttons} ref={buttonsContainerRef}>
+          <div style={styles.buttons}>
             <button
               ref={yesBtnRef}
               key={yesJumpKey}
