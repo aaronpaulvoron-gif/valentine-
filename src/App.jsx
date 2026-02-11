@@ -15,7 +15,7 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-/* Floating and shaking animation */
+/* Floating & Shake animations */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
@@ -41,6 +41,13 @@ export default function App() {
   const [supabaseError, setSupabaseError] = useState(false);
   const [supabaseMissing, setSupabaseMissing] = useState(false);
   const [notification, setNotification] = useState(null);
+
+  // Track YES button position
+  const [yesPosition, setYesPosition] = useState({
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%) scale(1)",
+  });
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -95,8 +102,20 @@ export default function App() {
   /* NO BUTTON */
   function handleNo() {
     if (noCount < 10) {
-      setNoCount((prev) => prev + 1);
-      if (noCount + 1 === 10) setMaxNoReached(true);
+      const newCount = noCount + 1;
+      setNoCount(newCount);
+      if (newCount === 10) setMaxNoReached(true);
+
+      // Make YES button jump randomly and scale up based on noCount
+      const top = Math.random() * 50 + 20 + "%"; // 20% to 70%
+      const left = Math.random() * 50 + 10 + "%"; // 10% to 60%
+      const scale = 1 + newCount * 0.3;
+      setYesPosition({
+        top,
+        left,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        transition: "all 0.5s ease",
+      });
     }
   }
 
@@ -107,16 +126,6 @@ export default function App() {
   useEffect(() => {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
-
-  /* YES button scale & random position */
-  const yesScale = 1 + noCount * 0.3;
-  const yesPosition = {
-    top: `${Math.random() * 60 + 20}%`,
-    left: `${Math.random() * 60 + 20}%`,
-    position: "absolute",
-    transform: `scale(${yesScale})`,
-    transition: "all 0.5s ease",
-  };
 
   const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
 
@@ -153,7 +162,6 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* First person: generate link */}
       {!urlName && !submitted && (
         <>
           <h1 style={styles.headline}>Type your crush's name 💌</h1>
@@ -169,19 +177,21 @@ export default function App() {
         </>
       )}
 
-      {/* Display link for sending */}
       {magicLink && submitted && !urlName && (
         <>
           <h2 style={styles.headline}>Send this link to {name} 💘</h2>
-          <div style={styles.linkBox}>{magicLink}</div>
+          <div style={styles.linkBox}>
+            <p style={styles.link}>{magicLink}</p>
+          </div>
           {notification && <p style={styles.notification}>{notification}</p>}
         </>
       )}
 
-      {/* Second person: YES/NO */}
       {urlName && !answered && (
         <>
-          <h1 style={styles.headline}>{recipientName}, will you be my Valentine? 💘</h1>
+          <h1 style={styles.headline}>
+            {recipientName}, will you be my Valentine? 💘
+          </h1>
           {noCount > 0 && <p style={styles.noMessage}>{noMessage}</p>}
 
           <div style={styles.buttons}>
@@ -201,7 +211,6 @@ export default function App() {
         </>
       )}
 
-      {/* Answered display */}
       {answered && (
         <>
           {supabaseError ? (
@@ -262,22 +271,31 @@ const styles = {
     cursor: "pointer",
   },
   linkBox: {
-    marginTop: "10px",
-    padding: "12px",
+    border: "2px solid #ff4d6d",
     borderRadius: "12px",
-    border: "2px dashed #ff4d6d",
-    backgroundColor: "rgba(255,77,109,0.1)",
+    padding: "12px 20px",
+    marginTop: "10px",
+    backgroundColor: "#ffe3ea",
+    width: "100%",
+    maxWidth: "400px",
+    wordBreak: "break-word",
+    boxShadow: "0 4px 8px rgba(255,77,109,0.3)",
+  },
+  link: {
+    color: "#ff1a75",
+    fontWeight: "bold",
     fontSize: "18px",
-    wordBreak: "break-all",
+    userSelect: "all",
+    cursor: "pointer",
   },
   buttons: {
-    display: "flex",
-    gap: "20px",
-    marginTop: "40px",
     position: "relative",
+    width: "280px",
     height: "150px",
+    marginTop: "40px",
   },
   yes: {
+    position: "absolute",
     backgroundColor: "#ff4d6d",
     color: "white",
     border: "none",
@@ -285,10 +303,13 @@ const styles = {
     cursor: "pointer",
     padding: "18px 36px",
     fontSize: "24px",
-    position: "absolute",
     transition: "all 0.5s ease",
+    userSelect: "none",
   },
   no: {
+    position: "absolute",
+    bottom: "20px",
+    left: "20px",
     fontSize: "16px",
     padding: "10px 18px",
     backgroundColor: "#adb5bd",
@@ -296,7 +317,7 @@ const styles = {
     border: "none",
     borderRadius: "10px",
     cursor: "pointer",
-    alignSelf: "center",
+    userSelect: "none",
   },
   noMessage: {
     marginTop: "10px",
