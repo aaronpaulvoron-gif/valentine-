@@ -42,7 +42,6 @@ export default function App() {
 
   const yesRef = useRef(null);
   const noRef = useRef(null);
-  const linkRef = useRef(null);
 
   const loveQuotes = [
     "You just made me the happiest person alive 💖",
@@ -52,26 +51,34 @@ export default function App() {
     "My heart is officially yours 💓",
   ];
 
-  const reconsiderQuotes = [
-    "Wait… maybe think again 🥺",
-    "Are you sure? 😢",
-    "I promise to be cute forever! 🐱",
-    "I'll buy you snacks 🍫",
-    "Please don't go 😭",
-    "My cat thinks we're dating 😖",
-    "I'll wait forever 💘",
-    "Just reconsider 🥹",
-    "One more chance? 😻"
+  const sadQuotes = [
+    "That hurt a little 🥺",
+    "Ouch… my heart 💔",
+    "Please reconsider 😢",
+    "I’ll wait forever 💘",
+    "You’re breaking my heart 😭",
   ];
 
-  function handleGenerateLink() {
+  const handleGenerateLink = () => {
     if (!name.trim()) return;
-    const link = `${window.location.origin}?name=${encodeURIComponent(name.trim())}`;
+    const link = `${window.location.origin}?name=${encodeURIComponent(
+      name.trim()
+    )}`;
     setMagicLink(link);
     setSubmitted(true);
-  }
+  };
 
-  async function handleYes() {
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(magicLink).then(() => {
+      const el = document.getElementById("linkBox");
+      el.style.background = "#ffe6e6";
+      el.style.color = "#ff4d6d";
+      el.select?.();
+      window.getSelection()?.removeAllRanges();
+    });
+  };
+
+  const handleYes = async () => {
     try {
       const randomLove =
         loveQuotes[Math.floor(Math.random() * loveQuotes.length)];
@@ -97,23 +104,20 @@ export default function App() {
       console.error(err);
       setErrorMsg("Supabase insert failed.");
     }
-  }
+  };
 
-  async function handleNo() {
+  const handleNo = async () => {
     if (finalNo) return;
 
     const newCount = noCount + 1;
     setNoCount(newCount);
 
-    let message = "";
     if (newCount < 10) {
-      message = reconsiderQuotes[Math.min(newCount - 1, reconsiderQuotes.length - 1)];
+      setQuote("Please reconsider... 💌");
     } else {
-      message = "Final NO 😿";
+      setQuote(sadQuotes[Math.floor(Math.random() * sadQuotes.length)]);
       setFinalNo(true);
     }
-
-    setQuote(message);
 
     try {
       const { error } = await supabase.from("valentine_repone").insert([
@@ -121,7 +125,7 @@ export default function App() {
           name: recipientName,
           answered_yes: false,
           no_count: newCount,
-          no_message: message,
+          no_message: newCount < 10 ? "Please reconsider 💌" : quote,
         },
       ]);
       if (error) throw error;
@@ -130,44 +134,30 @@ export default function App() {
       setErrorMsg("Supabase insert failed.");
     }
 
-    // Grow YES slightly (MAX medium)
     if (yesRef.current) {
       const base = 170;
-      const grow = Math.min(newCount * 7, 50); // MAX 50px
+      const grow = Math.min(newCount * 7, 50);
       yesRef.current.style.width = base + grow + "px";
       yesRef.current.style.boxShadow = `0 0 ${10 + grow}px rgba(255,77,109,0.7)`;
     }
 
-    // Shake NO
     if (noRef.current) {
       noRef.current.style.animation = "shake 0.4s";
       setTimeout(() => {
         if (noRef.current) noRef.current.style.animation = "none";
       }, 400);
     }
-  }
-
-  function handleCopy() {
-    if (!linkRef.current) return;
-    const el = linkRef.current;
-    navigator.clipboard.writeText(el.innerText);
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const urlName = params.get("name");
+  };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlName = params.get("name");
     if (urlName) setRecipientName(urlName);
-  }, [urlName]);
+  }, []);
 
   return (
     <div style={styles.container}>
-      {!urlName && !submitted && (
+      {!recipientName && !submitted && (
         <>
           <h1 style={styles.title}>Create a Valentine Proposal 💌</h1>
           <input
@@ -182,17 +172,21 @@ export default function App() {
         </>
       )}
 
-      {magicLink && submitted && !urlName && (
+      {magicLink && submitted && !recipientName && (
         <>
           <h2 style={styles.title}>Send this to your crush 💘</h2>
-          <div style={styles.linkBox}>
-            <span ref={linkRef}>{magicLink}</span>
-            <button style={styles.copyBtn} onClick={handleCopy}>Copy</button>
+          <div
+            id="linkBox"
+            onClick={handleCopyLink}
+            style={styles.linkBox}
+            title="Click to copy!"
+          >
+            {magicLink}
           </div>
         </>
       )}
 
-      {urlName && !answered && !finalNo && (
+      {recipientName && !answered && !finalNo && (
         <>
           <h1 style={styles.big}>
             {recipientName}, will you be my Valentine?
@@ -210,23 +204,21 @@ export default function App() {
             </button>
           </div>
 
-          <p style={styles.counter}>
-            NO pressed: {noCount} / 10
-          </p>
+          <p style={styles.counter}>NO pressed: {noCount} / 10</p>
         </>
       )}
 
       {finalNo && (
-        <>
+        <div style={{ textAlign: "center" }}>
           <h1 style={styles.big}>
-            {recipientName} rejected you after 10 tries 😿💔
+            {recipientName} rejected you after 10 tries 😭💔
           </h1>
           <img
-            src="https://i.imgur.com/3kHqL0D.gif"
-            alt="crying cat"
-            style={{ width: "250px", marginTop: "20px" }}
+            src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif"
+            alt="Crying cat"
+            style={{ width: "300px", borderRadius: "20px", marginTop: "20px" }}
           />
-        </>
+        </div>
       )}
 
       {answered && (
@@ -282,22 +274,13 @@ const styles = {
     cursor: "pointer",
   },
   linkBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
     background: "white",
     padding: "15px 25px",
     borderRadius: "12px",
     color: "#ff4d6d",
     fontWeight: "bold",
-  },
-  copyBtn: {
-    backgroundColor: "#ff4d6d",
-    border: "none",
-    color: "white",
-    padding: "8px 14px",
-    borderRadius: "10px",
     cursor: "pointer",
+    transition: "all 0.3s ease",
   },
   buttons: {
     display: "flex",
@@ -329,6 +312,7 @@ const styles = {
     fontSize: "20px",
     color: "white",
     fontWeight: "bold",
+    marginTop: "20px",
   },
   counter: {
     marginTop: "15px",
