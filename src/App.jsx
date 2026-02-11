@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import confetti from "canvas-confetti";
 
-/* 💖 HEART FIREWORKS */
 function createHeart() {
   const heart = document.createElement("div");
   heart.innerText = "💖";
@@ -15,7 +14,6 @@ function createHeart() {
   setTimeout(() => heart.remove(), 3000);
 }
 
-/* Floating animation */
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes float {
@@ -57,6 +55,7 @@ export default function App() {
   const [copyAnim, setCopyAnim] = useState(false);
 
   const yesBtnRef = useRef(null);
+  const buttonsContainerRef = useRef(null);
 
   const noMessages = [
     "Are you sure? 🥺",
@@ -71,7 +70,6 @@ export default function App() {
     "I’ll wait forever if I have to 💘",
   ];
 
-  /* Generate Magic Link */
   function handleGenerateLink() {
     if (!name.trim()) return;
     const link = `${window.location.origin}?name=${encodeURIComponent(
@@ -81,7 +79,6 @@ export default function App() {
     setSubmitted(true);
   }
 
-  /* YES BUTTON */
   async function handleYes() {
     setAnswered(true);
 
@@ -102,54 +99,60 @@ export default function App() {
       console.log("Inserted:", data);
     }
 
-    // Heart fireworks
     const interval = setInterval(createHeart, 120);
     setTimeout(() => clearInterval(interval), 4500);
 
-    // Confetti
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   }
 
-  /* NO BUTTON - triggers YES button jump */
   function handleNo() {
     if (noCount < 10) {
       const newCount = noCount + 1;
       setNoCount(newCount);
       if (newCount === 10) setMaxNoReached(true);
 
-      // Calculate random jump positions inside container bounds
-      if (yesBtnRef.current) {
-        const container = yesBtnRef.current.parentElement.getBoundingClientRect();
+      if (yesBtnRef.current && buttonsContainerRef.current) {
+        const container = buttonsContainerRef.current.getBoundingClientRect();
         const btnRect = yesBtnRef.current.getBoundingClientRect();
 
-        // Max jump: container width/height minus button size minus some padding
-        const maxX = container.width - btnRect.width - 20;
+        // Container top-left relative to viewport
+        // Button width and height
+        const maxX = container.width - btnRect.width - 20; // padding 20px total
         const maxY = container.height - btnRect.height - 20;
 
-        // Generate random x,y within -maxX/2 to +maxX/2 (centered)
-        const randX = (Math.random() - 0.5) * maxX + "px";
-        const randY = (Math.random() - 0.5) * maxY + "px";
+        // Random position inside container (relative to container)
+        const randX = Math.random() * maxX;
+        const randY = Math.random() * maxY;
+
+        // Position relative to container center, for translate:
+        // We want to translate so that YES button moves to new position inside container
+        // The YES button original position is centered inside container
+        // So shift from center by (randX - centerX), (randY - centerY)
+        // Container center:
+        const centerX = container.width / 2 - btnRect.width / 2;
+        const centerY = container.height / 2 - btnRect.height / 2;
+
+        // Translate values (offset from center)
+        const offsetX = randX - centerX;
+        const offsetY = randY - centerY;
 
         setYesJumpStyle({
-          "--jump-x": randX,
-          "--jump-y": randY,
+          "--jump-x": `${offsetX}px`,
+          "--jump-y": `${offsetY}px`,
           animation: "jump 0.6s ease",
         });
 
-        // Change key to re-trigger animation
         setYesJumpKey((k) => k + 1);
       }
     }
   }
 
-  /* COPY LINK */
   function handleCopyLink() {
     navigator.clipboard.writeText(magicLink);
     setCopyAnim(true);
     setTimeout(() => setCopyAnim(false), 800);
   }
 
-  /* URL PARAMS */
   const params = new URLSearchParams(window.location.search);
   const urlName = params.get("name");
 
@@ -157,12 +160,9 @@ export default function App() {
     if (urlName) setRecipientName(urlName);
   }, [urlName]);
 
-  /* YES button scale */
   const yesScale = 1 + noCount * 0.3;
-
   const noMessage = noMessages[Math.min(noCount, noMessages.length - 1)];
 
-  /* Realtime notifications */
   useEffect(() => {
     if (!submitted) return;
     const channel = supabase
@@ -238,7 +238,7 @@ export default function App() {
           </h1>
           {noCount > 0 && <p style={styles.noMessage}>{noMessage}</p>}
 
-          <div style={styles.buttons}>
+          <div style={styles.buttons} ref={buttonsContainerRef}>
             <button
               ref={yesBtnRef}
               key={yesJumpKey}
@@ -365,7 +365,7 @@ const styles = {
     marginTop: "40px",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "80px", // enough height for jumping
+    minHeight: "80px",
     position: "relative",
   },
   yes: {
