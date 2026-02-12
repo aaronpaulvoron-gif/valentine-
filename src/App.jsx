@@ -15,7 +15,7 @@ export default function App() {
   const [resultStatus, setResultStatus] = useState("");
   const [replyLink, setReplyLink] = useState("");
 
-  // --- 🌟 EMOJI EFFECTS LOGIC ---
+  // --- 🌟 EMOJI MOUSE TRAIL & TYPING EFFECTS ---
   useEffect(() => {
     const handleMouseMove = (e) => {
       createParticle(e.clientX, e.clientY, ["✨", "💖", "🌸", "⭐"][Math.floor(Math.random() * 4)]);
@@ -42,6 +42,22 @@ export default function App() {
     setName(e.target.value);
     const rect = e.target.getBoundingClientRect();
     createParticle(rect.left + Math.random() * rect.width, rect.top, ["🎈", "💌", "🌈", "✨"][Math.floor(Math.random() * 4)]);
+  };
+
+  // --- 🔄 THE "BACK TO START" RESET FUNCTION ---
+  const restartApp = () => {
+    // This clears everything and returns to the "Type Name" screen
+    window.history.replaceState({}, document.title, "/");
+    setName("");
+    setMagicLink("");
+    setSubmitted(false);
+    setRecipientName("");
+    setAnswered(false);
+    setFinalNo(false);
+    setNoCount(0);
+    setQuote("");
+    setIsResultView(false);
+    setResultStatus("");
   };
 
   // --- 📋 ALL 150 QUOTES (STRICTLY PRESERVED) ---
@@ -95,7 +111,8 @@ export default function App() {
             </h1>
             <h2 style={{color: '#555', fontSize: '1.2rem'}}>{recipientName}'s Final Answer</h2>
             <p style={styles.finalQuote}>"{quote}"</p>
-            <button onClick={() => window.location.href = window.location.origin} style={styles.backBtn}>← Back to Home</button>
+            {/* THIS IS THE BACK BUTTON THAT COMPLETES THE LOOP */}
+            <button onClick={restartApp} style={styles.backBtn}>← Back to Type Again</button>
           </div>
         ) : !recipientName ? (
           !submitted ? (
@@ -163,7 +180,7 @@ const styles = {
   emojiHero: { fontSize: "70px", marginBottom: "15px" },
   title: { color: "#ff4d6d", fontSize: "1.7rem", fontWeight: 'bold' },
   input: { width: "100%", padding: "16px", borderRadius: "15px", border: "3px solid #ffccd5", fontSize: "1.1rem", outline: "none", boxSizing: 'border-box' },
-  mainBtn: { background: "#ff4d6d", color: "white", border: "none", width: "100%", padding: "16px", borderRadius: "15px", fontWeight: "bold", cursor: "pointer", marginTop: "15px", fontSize: "1.1rem", transition: '0.3s' },
+  mainBtn: { background: "#ff4d6d", color: "white", border: "none", width: "100%", padding: "16px", borderRadius: "15px", fontWeight: "bold", cursor: "pointer", marginTop: "15px", fontSize: "1.1rem" },
   linkBox: { display: "flex", background: "#fff9fa", padding: "12px", borderRadius: "15px", border: "2px dashed #ff4d6d", marginTop: "15px", alignItems: 'center' },
   linkInput: { border: "none", background: "transparent", flex: 1, fontSize: "0.7rem", color: '#ff4d6d', outline: 'none' },
   copyBtn: { background: "#ff4d6d", color: "white", border: "none", padding: "8px 15px", borderRadius: "10px", cursor: 'pointer' },
