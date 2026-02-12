@@ -45,7 +45,7 @@ export default function App() {
   ];
 
   const handleResponse = async (isYes) => {
-    const list = isYes ? kiligQuotes : ["My heart just shattered. 💔"];
+    const list = isYes ? kiligQuotes : ["My heart is broken... 💔"];
     const selectedQuote = list[Math.floor(Math.random() * list.length)];
 
     if (isYes) {
@@ -57,10 +57,20 @@ export default function App() {
       setQuote(selectedQuote);
     }
 
-    // --- SAVE TO SUPABASE SO YOU CAN SEE IT ---
+    // SECRET SAVE TO SUPABASE
     await supabase.from("valentine_response2").insert([
       { name: recipientName, answered_yes: isYes, no_count: noCount, no_message: isYes ? "YES!" : "Final No" }
     ]);
+  };
+
+  const handleSendBack = (isYes) => {
+    const resParam = isYes ? 'yes' : 'no';
+    const replyLink = `${window.location.origin}?result=${resParam}&from=${encodeURIComponent(recipientName)}`;
+    const message = isYes
+        ? `I have a special answer for you... Click here: ${replyLink} ✨`
+        : `I've sent my answer... Check it here: ${replyLink} 💌`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   useEffect(() => {
@@ -71,6 +81,7 @@ export default function App() {
     if (result === "yes") {
       setIsSuccessMode(true);
       setRecipientName(params.get("from") || "Someone");
+      setQuote(kiligQuotes[Math.floor(Math.random() * 20)]);
       confetti({ particleCount: 200, spread: 100 });
     } else if (n) {
       setRecipientName(n);
@@ -82,38 +93,38 @@ export default function App() {
       <div style={styles.card}>
         {isSuccessMode ? (
           <div>
-            <h1 style={styles.title}>MISSION SUCCESS! 🏆</h1>
+            <h1 style={styles.title}>FOREVER? 💍</h1>
             <img src="https://i.giphy.com/media/MDJ9IbM3vuzY2qEqaS/giphy.gif" style={styles.gif} />
             <h2 style={{color: '#333'}}>{recipientName} SAID YES!</h2>
-            <p style={styles.finalQuote}>"Check your Supabase dashboard for the logs!"</p>
-            <p style={{color: '#ff4d6d', fontWeight: 'bold'}}>Happy Valentine's 2026! 🌹</p>
+            <p style={styles.finalQuote}>"{quote}"</p>
+            <p style={{color: '#ff4d6d', fontWeight: 'bold'}}>2026 is going to be amazing. 🌹</p>
           </div>
         ) : !recipientName ? (
           !submitted ? (
             <>
               <h1 style={styles.title}>Valentine 2026 💌</h1>
               <img src="https://i.giphy.com/media/C1asB6XJjAnS0/giphy.gif" style={styles.gif} />
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter Crush Name..." style={styles.input} />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Recipient Name..." style={styles.input} />
               <button onClick={() => {
                 setMagicLink(`${window.location.origin}?name=${encodeURIComponent(name.trim())}`);
                 setSubmitted(true);
-              }} style={styles.mainBtn}>Create Magical Link ✨</button>
+              }} style={styles.mainBtn}>Create Private Link ✨</button>
             </>
           ) : (
             <>
-              <h2 style={styles.title}>Link Created! 🚀</h2>
+              <h2 style={styles.title}>Link Generated! 🚀</h2>
+              <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '15px'}}>Share this link with your special someone:</p>
               <div style={styles.linkBox}>
                 <input readOnly value={magicLink} style={styles.linkInput} />
-                <button onClick={() => {navigator.clipboard.writeText(magicLink); alert("Copied! 🐾");}} style={styles.copyBtn}>Copy</button>
+                <button onClick={() => {navigator.clipboard.writeText(magicLink); alert("Link Copied! 🐾");}} style={styles.copyBtn}>Copy</button>
               </div>
-              <p style={styles.instruction}>Send this to {name}. Their answer will be saved in your database!</p>
             </>
           )
         ) : (
           <>
-            <h1 style={styles.title}>{answered ? "YES! 🎉" : finalNo ? "💔" : `Hi ${recipientName}!`}</h1>
+            <h1 style={styles.title}>{answered ? "YES! 🎉" : finalNo ? "Oh... 💔" : `Hi ${recipientName}!`}</h1>
             <img src={currentGif} style={styles.gif} />
-            <p style={styles.proposalText}>{answered ? "You made me the luckiest!" : finalNo ? "My heart..." : "Will you be my Valentine? 💘"}</p>
+            <p style={styles.proposalText}>{answered ? "I'm so happy!" : finalNo ? "Maybe next time." : "I have a question for you... 💘"}</p>
             <p style={styles.quoteDisplay}>{quote}</p>
 
             {!answered && !finalNo ? (
@@ -134,8 +145,9 @@ export default function App() {
               </div>
             ) : (
               <div style={styles.responseBox}>
-                <p style={styles.successText}>Response Sent Successfully! ✅</p>
-                <p style={{fontSize: '0.8rem', color: '#666'}}>You can now close this tab.</p>
+                <button onClick={() => handleSendBack(answered)} style={styles.sendBackBtn}>
+                  {answered ? "Send the Good News! 💌" : "Send My Answer 🥀"}
+                </button>
               </div>
             )}
           </>
@@ -147,19 +159,18 @@ export default function App() {
 
 const styles = {
   container: { height: "100vh", width: "100vw", background: "linear-gradient(to bottom, #ff9a9e, #fecfef)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Poppins', sans-serif" },
-  card: { background: "rgba(255, 255, 255, 0.95)", padding: "35px", borderRadius: "30px", boxShadow: "0 15px 35px rgba(0,0,0,0.2)", textAlign: "center", maxWidth: "400px", width: "90%", border: '2px solid white' },
+  card: { background: "rgba(255, 255, 255, 0.95)", padding: "35px", borderRadius: "35px", boxShadow: "0 20px 45px rgba(0,0,0,0.15)", textAlign: "center", maxWidth: "400px", width: "90%", border: '2px solid white' },
   title: { color: "#ff4d6d", fontSize: "2.2rem", marginBottom: "15px", fontWeight: 'bold' },
-  gif: { width: "100%", borderRadius: "20px", marginBottom: "15px", boxShadow: '0 5px 15px rgba(0,0,0,0.1)' },
-  input: { width: "100%", padding: "12px", borderRadius: "10px", border: "2px solid #ffb6c1", marginBottom: "15px", boxSizing: 'border-box', outline: 'none' },
-  mainBtn: { background: "#ff4d6d", color: "white", border: "none", width: "100%", padding: "15px", borderRadius: "10px", fontWeight: "bold", cursor: "pointer", fontSize: '1rem' },
-  linkBox: { display: "flex", background: "#fdf0f2", padding: "10px", borderRadius: "10px", border: "1px dashed #ff4d6d", alignItems: 'center' },
-  linkInput: { border: "none", background: "transparent", flex: 1, fontSize: "0.7rem", color: '#ff4d6d' },
-  copyBtn: { background: "#ff4d6d", color: "white", border: "none", padding: "5px 10px", borderRadius: "5px", cursor: 'pointer' },
-  yesBtn: { background: "#4caf50", color: "white", border: "none", padding: "15px 40px", borderRadius: "15px", fontSize: "1.3rem", cursor: "pointer", fontWeight: 'bold', boxShadow: '0 5px 15px rgba(76,175,80,0.4)' },
-  noBtn: { background: "#f44336", color: "white", border: "none", padding: "10px 20px", borderRadius: "15px", cursor: "pointer", marginLeft: "10px", fontWeight: 'bold' },
-  quoteDisplay: { color: "#ff4d6d", fontWeight: "bold", fontStyle: "italic", margin: "10px 0", minHeight: '40px' },
-  instruction: { fontSize: '0.8rem', marginTop: '15px', color: '#888' },
+  gif: { width: "100%", borderRadius: "20px", marginBottom: "15px" },
+  input: { width: "100%", padding: "14px", borderRadius: "12px", border: "2px solid #ffb6c1", marginBottom: "15px", outline: "none" },
+  mainBtn: { background: "#ff4d6d", color: "white", border: "none", width: "100%", padding: "16px", borderRadius: "12px", fontWeight: "bold", cursor: "pointer", fontSize: '1rem' },
+  linkBox: { display: "flex", background: "#fdf0f2", padding: "12px", borderRadius: "12px", border: "1px dashed #ff4d6d", alignItems: 'center' },
+  linkInput: { border: "none", background: "transparent", flex: 1, fontSize: "0.8rem", color: '#ff4d6d' },
+  copyBtn: { background: "#ff4d6d", color: "white", border: "none", padding: "6px 12px", borderRadius: "8px", cursor: 'pointer' },
+  yesBtn: { background: "#4caf50", color: "white", border: "none", padding: "15px 45px", borderRadius: "15px", fontSize: "1.4rem", cursor: "pointer", fontWeight: 'bold' },
+  noBtn: { background: "#f44336", color: "white", border: "none", padding: "12px 22px", borderRadius: "15px", cursor: "pointer", marginLeft: "10px", fontWeight: 'bold' },
+  quoteDisplay: { color: "#ff4d6d", fontWeight: "bold", fontStyle: "italic", margin: "10px 0" },
+  sendBackBtn: { background: "#ff4d6d", color: "white", border: "none", padding: "18px", borderRadius: "50px", width: "100%", fontWeight: "bold", cursor: "pointer", fontSize: '1.1rem', marginTop: '20px', animation: 'pulse 1.5s infinite' },
   finalQuote: { fontSize: '1.2rem', color: '#ff4d6d', margin: '20px 0', fontWeight: 'bold' },
-  proposalText: { fontSize: '1.2rem', fontWeight: 'bold', color: '#333' },
-  successText: { color: '#2ecc71', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '20px' }
+  proposalText: { fontSize: '1.2rem', fontWeight: 'bold', color: '#333' }
 };
