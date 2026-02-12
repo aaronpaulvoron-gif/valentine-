@@ -15,7 +15,7 @@ export default function App() {
   const [resultStatus, setResultStatus] = useState("");
   const [replyLink, setReplyLink] = useState("");
 
-  // --- 🌟 EMOJI INTERACTIVE EFFECTS ---
+  // --- 🌟 INTERACTIVE EFFECTS ---
   useEffect(() => {
     const handleMouseMove = (e) => {
       createParticle(e.clientX, e.clientY, ["✨", "💖", "🌸", "⭐"][Math.floor(Math.random() * 4)]);
@@ -67,7 +67,12 @@ export default function App() {
     const list = isYes ? kiligQuotes : sadQuotes;
     const finalQuote = list[Math.floor(Math.random() * list.length)];
     await supabase.from("valentine_response2").insert([{ name: recipientName, answered_yes: isYes, no_count: noCount, no_message: isYes ? "YES!" : "Final No" }]);
-    const resLink = `${window.location.origin}?view_result=true&status=${isYes ? 'yes' : 'no'}&from=${encodeURIComponent(recipientName)}`;
+
+    // --- 🤫 ENCRYPT EVERYTHING IN REPLY ---
+    const secretStatus = btoa(isYes ? "kilig" : "broken");
+    const secretName = btoa(recipientName);
+    const resLink = `${window.location.origin}?v=${secretStatus}&u=${secretName}`;
+
     setReplyLink(resLink);
     if (isYes) {
       setAnswered(true); setQuote(finalQuote);
@@ -79,14 +84,28 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("view_result")) {
+    const secretStatus = params.get("v");
+    const secretUser = params.get("u");
+    const secretInitialName = params.get("n"); // Encrypted name for first link
+
+    // Case 1: Viewing the final result (Link 4)
+    if (secretStatus && secretUser) {
       setIsResultView(true);
-      setResultStatus(params.get("status"));
-      setRecipientName(params.get("from"));
-      const list = params.get("status") === "yes" ? kiligQuotes : sadQuotes;
-      setQuote(list[Math.floor(Math.random() * list.length)]);
-    } else if (params.get("name")) {
-      setRecipientName(params.get("name"));
+      try {
+        const decodedName = atob(secretUser);
+        const decodedStatus = atob(secretStatus);
+        setRecipientName(decodedName);
+        const status = decodedStatus === "kilig" ? "yes" : "no";
+        setResultStatus(status);
+        const list = status === "yes" ? kiligQuotes : sadQuotes;
+        setQuote(list[Math.floor(Math.random() * list.length)]);
+      } catch(e) { restartApp(); }
+    }
+    // Case 2: Recipient opening the proposal (Link 2)
+    else if (secretInitialName) {
+      try {
+        setRecipientName(atob(secretInitialName));
+      } catch(e) { restartApp(); }
     }
   }, []);
 
@@ -96,8 +115,6 @@ export default function App() {
         @keyframes fadeUp { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-50px); } }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .yes-btn:hover { animation: pulse 0.6s infinite; background: #388e3c !important; }
-        .no-btn:hover { transform: translate(1px, 1px); background: #c62828 !important; }
       `}</style>
 
       <div style={styles.card}>
@@ -105,6 +122,7 @@ export default function App() {
           <div>
             <div style={styles.emojiHero}>{resultStatus === "yes" ? "🎊💖💍" : "🥀🌑💔"}</div>
             <h1 style={styles.title}>{resultStatus === "yes" ? "YES! 😍" : "No... 🥀"}</h1>
+            <h3 style={{color: '#888'}}>{recipientName} replied!</h3>
             <p style={styles.finalQuote}>"{quote}"</p>
             <button onClick={restartApp} style={styles.backBtn}>← Back to Home</button>
           </div>
@@ -115,7 +133,8 @@ export default function App() {
               <div style={styles.emojiHero}>✍️✨🧸</div>
               <input value={name} onInput={handleTyping} placeholder="Type name here..." style={styles.input} />
               <button onClick={() => {
-                setMagicLink(`${window.location.origin}?name=${encodeURIComponent(name.trim())}`);
+                const encryptedName = btoa(name.trim());
+                setMagicLink(`${window.location.origin}?n=${encryptedName}`);
                 setSubmitted(true);
               }} style={styles.mainBtn}>Get Proposal Link ✨</button>
             </>
@@ -127,7 +146,7 @@ export default function App() {
                 <input readOnly value={magicLink} style={styles.linkInput} />
                 <button onClick={() => {navigator.clipboard.writeText(magicLink); alert("Copied! 🐾");}} style={styles.copyBtn}>Copy</button>
               </div>
-              <button onClick={restartApp} style={styles.backBtn}>← Change Name / Start Over</button>
+              <button onClick={restartApp} style={styles.backBtn}>← Change Name</button>
             </>
           )
         ) : (
@@ -178,8 +197,8 @@ const styles = {
   linkBox: { display: "flex", background: "#fff9fa", padding: "12px", borderRadius: "15px", border: "2px dashed #ff4d6d", marginTop: "15px", alignItems: 'center' },
   linkInput: { border: "none", background: "transparent", flex: 1, fontSize: "0.7rem", color: '#ff4d6d', outline: 'none' },
   copyBtn: { background: "#ff4d6d", color: "white", border: "none", padding: "8px 15px", borderRadius: "10px", cursor: 'pointer' },
-  yesBtn: { background: "#4caf50", color: "white", border: "none", padding: "15px 40px", borderRadius: "20px", fontSize: "1.3rem", cursor: "pointer", fontWeight: "bold", transition: "0.3s" },
-  noBtn: { background: "#f44336", color: "white", border: "none", padding: "10px 25px", borderRadius: "20px", cursor: "pointer", marginLeft: "15px", transition: "0.3s" },
+  yesBtn: { background: "#4caf50", color: "white", border: "none", padding: "15px 40px", borderRadius: "20px", fontSize: "1.3rem", cursor: "pointer", fontWeight: "bold" },
+  noBtn: { background: "#f44336", color: "white", border: "none", padding: "10px 25px", borderRadius: "20px", cursor: "pointer", marginLeft: "15px" },
   quoteDisplay: { color: "#ff4d6d", fontStyle: "italic", margin: "15px 0", fontSize: '0.9rem', minHeight: '40px' },
   backBtn: { background: "none", color: "#ff4d6d", border: "none", marginTop: "25px", cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' },
   proposalText: { fontSize: "1.2rem", fontWeight: "bold", color: "#444" },
